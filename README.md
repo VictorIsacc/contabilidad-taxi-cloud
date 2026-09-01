@@ -36,3 +36,9 @@ Esto permite que la PWA de GitHub Pages lea el Excel mediante `fetch`.
 No publiques la URL del webhook en GitHub. La app la guarda solo en el navegador.
 Esta versión todavía NO escribe cambios en OneDrive; solo lee y carga datos.
 El guardado Cloud será el siguiente paso después de verificar la lectura.
+
+
+## v0.3
+- Corrige la respuesta de Make cuando el Buffer del Excel llega representado como texto hexadecimal.
+- Reconstruye automáticamente los bytes XLSX antes de leer el libro.
+- No requiere ningún cambio adicional en el escenario de Make.

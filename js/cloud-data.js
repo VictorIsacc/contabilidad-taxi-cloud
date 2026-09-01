@@ -32,11 +32,47 @@ export async function fetchWorkbook(){
     throw new Error(`Make respondió con error ${response.status}.`);
   }
 
-  const buf = await response.arrayBuffer();
+  let buf = await response.arrayBuffer();
   if(!buf.byteLength) throw new Error("Make no devolvió contenido del Excel.");
 
-  workbookBytes = buf;
-  workbook = XLSX.read(buf, {
+  // Make puede devolver el Buffer binario como texto hexadecimal
+  // (por ejemplo: "50 4b 03 04 ..."). Si ocurre, lo reconstruimos
+  // automáticamente antes de entregarlo a SheetJS.
+  const raw = new Uint8Array(buf);
+  let normalized = buf;
+
+  try{
+    const text = new TextDecoder("utf-8").decode(raw).trim();
+
+    // Acepta "50 4B 03 04", "504B0304", comas o saltos de línea.
+    const compact = text
+      .replace(/0x/gi, "")
+      .replace(/[\s,;:\-]+/g, "");
+
+    const looksHex =
+      compact.length >= 8 &&
+      compact.length % 2 === 0 &&
+      /^[0-9a-f]+$/i.test(compact) &&
+      compact.slice(0, 8).toUpperCase() === "504B0304";
+
+    if(looksHex){
+      const bytes = new Uint8Array(compact.length / 2);
+      for(let i=0;i<bytes.length;i++){
+        bytes[i] = parseInt(compact.slice(i*2, i*2+2), 16);
+      }
+      normalized = bytes.buffer;
+    }
+  }catch(_e){
+    // Si no es texto hexadecimal, se usa el binario original.
+  }
+
+  const sig = new Uint8Array(normalized, 0, Math.min(4, normalized.byteLength));
+  if(sig.length < 4 || sig[0] !== 0x50 || sig[1] !== 0x4B){
+    throw new Error("Make ha devuelto datos, pero todavía no tienen formato XLSX válido.");
+  }
+
+  workbookBytes = normalized;
+  workbook = XLSX.read(normalized, {
     type: "array",
     cellDates: true,
     cellFormula: true,

@@ -31,3 +31,14 @@ dl{margin:16px 0 0}dl div{display:flex;justify-content:space-between;border-bott
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#16364b;border:1px solid #407695;color:#fff;padding:11px 16px;border-radius:12px;transition:.2s;z-index:50}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:900px){.input-grid{grid-template-columns:repeat(2,1fr)}.results-grid{grid-template-columns:repeat(2,1fr)}.cloud-grid{grid-template-columns:1fr}.hero-card{flex-direction:column}.hero-status{min-width:0}.account-btn span:last-child{display:none}}
 @media(max-width:520px){.app-shell{padding:12px}.topbar{height:64px}.brand img{width:39px;height:39px}.input-grid,.results-grid,.pdf-preview{grid-template-columns:1fr}.hero-card,.card{padding:16px}.card-head{align-items:flex-start;flex-direction:column}.date-input{width:100%}.actions .btn{flex:1 1 42%}}
+
+.cloud-span{grid-column:1/-1}
+.cloud-input-label{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+.cloud-input-label span{font-size:12px;color:var(--muted)}
+.cloud-url-input{width:100%;border:1px solid #29485e;background:#071723;color:#fff;border-radius:11px;padding:12px;outline:none}
+.cloud-url-input:focus{border-color:#4ea7dd;box-shadow:0 0 0 3px #2d87bd22}
+.sheet-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.sheet-summary>div{border:1px solid #254357;background:#091a26;border-radius:11px;padding:11px;display:flex;justify-content:space-between;gap:10px}
+.sheet-summary span{font-size:11px;color:var(--muted)}
+.sheet-summary.empty{display:block;color:var(--muted);font-size:12px}
+@media(max-width:700px){.sheet-summary{grid-template-columns:1fr}}
