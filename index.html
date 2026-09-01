@@ -120,34 +120,43 @@
 
     <section class="tabpage" id="tab-nube">
       <div class="cloud-grid">
-        <div class="card cloud-card">
-          <span class="eyebrow">MICROSOFT</span>
-          <h2>1. Iniciar sesión</h2>
-          <p>Cuando registremos la aplicación en Microsoft, este botón abrirá el inicio de sesión oficial de Microsoft.</p>
-          <button class="btn microsoft" id="loginMicrosoft">Conectar con Microsoft</button>
-          <small class="muted">No se guarda ninguna contraseña en GitHub.</small>
-        </div>
-
-        <div class="card cloud-card">
-          <span class="eyebrow">ONEDRIVE</span>
-          <h2>2. Libro de contabilidad</h2>
-          <p>Después del inicio de sesión seleccionaremos el Excel que utilizará Contabilidad Taxi.</p>
-          <div class="file-state">
-            <span>Libro seleccionado</span>
-            <strong id="workbookName">Ninguno</strong>
+        <div class="card cloud-card cloud-span">
+          <span class="eyebrow">MAKE + ONEDRIVE</span>
+          <h2>Conexión privada al Excel</h2>
+          <p>La URL del webhook se guarda únicamente en este navegador. No se escribe en GitHub ni en los archivos de la aplicación.</p>
+          <label class="cloud-input-label">
+            <span>URL privada del webhook de Make</span>
+            <input id="makeWebhookUrl" class="cloud-url-input" type="password" autocomplete="off" placeholder="https://hook.eu1.make.com/...">
+          </label>
+          <div class="actions">
+            <button class="btn primary" id="saveWebhook">Guardar conexión</button>
+            <button class="btn" id="testCloud">Cargar Excel desde OneDrive</button>
+            <button class="btn ghost" id="clearWebhook">Olvidar URL</button>
           </div>
-          <button class="btn" id="selectWorkbook" disabled>Seleccionar Excel de OneDrive</button>
+          <small class="muted">En cada teléfono o PC solo tendrás que guardar esta URL una vez.</small>
         </div>
 
         <div class="card cloud-card">
-          <span class="eyebrow">CONFIGURACIÓN</span>
-          <h2>Datos técnicos</h2>
-          <dl>
-            <div><dt>Client ID</dt><dd id="clientState">Pendiente</dd></div>
-            <div><dt>GitHub Pages</dt><dd>Preparado</dd></div>
-            <div><dt>PWA</dt><dd id="pwaState">Comprobando…</dd></div>
-            <div><dt>OneDrive</dt><dd id="driveState">Sin conectar</dd></div>
-          </dl>
+          <span class="eyebrow">ESTADO</span>
+          <h2>Libro de contabilidad</h2>
+          <div class="file-state">
+            <span>Conexión Make</span>
+            <strong id="makeState">Sin configurar</strong>
+          </div>
+          <div class="file-state">
+            <span>Excel recibido</span>
+            <strong id="workbookName">No cargado</strong>
+          </div>
+          <div class="file-state">
+            <span>Hojas detectadas</span>
+            <strong id="sheetCount">—</strong>
+          </div>
+        </div>
+
+        <div class="card cloud-card cloud-span">
+          <span class="eyebrow">COMPROBACIÓN DEL EXCEL</span>
+          <h2>Hojas detectadas</h2>
+          <div id="sheetSummary" class="sheet-summary empty">Carga el Excel para comprobar su estructura.</div>
         </div>
       </div>
     </section>
@@ -155,6 +164,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script type="module" src="./js/app.js"></script>
 </body>
 </html>

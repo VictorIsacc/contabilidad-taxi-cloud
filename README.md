@@ -1,47 +1,38 @@
-# Contabilidad Taxi Cloud · Base GitHub Pages v0.1
+# Contabilidad Taxi Cloud · GitHub Pages v0.2
 
-Esta carpeta está preparada para publicarse directamente con GitHub Pages.
+## Novedad principal
+La PWA puede llamar al webhook de Make, recibir el Excel de OneDrive y leerlo directamente
+en el navegador.
 
-## Qué funciona ya
+La URL del webhook NO se incluye en el repositorio. Se introduce desde la pestaña Nube y
+se guarda únicamente en `localStorage` de ese teléfono/PC.
 
-- Interfaz web responsive para PC y teléfono.
-- PWA instalable.
-- Manifest e iconos.
-- Service Worker.
-- Pestañas Contabilidad / Ingreso / Ahorro / Análisis / Nube.
-- Modo local de prueba para guardar y cargar días.
-- Primera capa de cálculo JavaScript.
-- Estructura preparada para Microsoft Graph y OneDrive.
-- El libro de OneDrive se identificará por su `itemId`, no por una ruta fija.
+## Antes de probar desde GitHub Pages: un único ajuste en Make
+En el módulo final `Webhook response`, añade un tercer Custom header:
 
-## Qué NO está conectado todavía
+Key:
+Access-Control-Allow-Origin
 
-El acceso Microsoft está deliberadamente pendiente. Antes hay que registrar la aplicación
-en Microsoft y obtener un Client ID. No pongas contraseñas ni secretos en estos archivos.
+Value:
+https://victorisacc.github.io
 
-## GitHub Pages
+Los otros dos headers que ya tienes se mantienen:
+- Content-Type
+- Content-Disposition
 
-1. Crea un repositorio, por ejemplo `contabilidad-taxi-cloud`.
-2. Sube TODOS los archivos y carpetas de este paquete a la raíz del repositorio.
-3. GitHub -> Settings -> Pages.
-4. En Build and deployment:
-   - Source: Deploy from a branch.
-   - Branch: main.
-   - Folder: /(root).
-5. Guarda.
-6. GitHub mostrará una URL parecida a:
-   `https://TU-USUARIO.github.io/contabilidad-taxi-cloud/`
+Esto permite que la PWA de GitHub Pages lea el Excel mediante `fetch`.
 
-No hace falta GitHub Actions para esta primera versión.
+## Cómo probar
+1. Sube esta versión al mismo repositorio sustituyendo los archivos anteriores.
+2. Abre la web de GitHub Pages.
+3. Entra en la pestaña Nube.
+4. Pega tu URL privada del webhook de Make.
+5. Pulsa Guardar conexión.
+6. Pulsa Cargar Excel desde OneDrive.
+7. Deben aparecer las hojas del libro.
+8. En Contabilidad selecciona una fecha existente y pulsa Cargar día.
 
-## Siguiente paso
-
-Con la URL definitiva de GitHub Pages:
-1. Registrar Contabilidad Taxi Cloud en Microsoft.
-2. Añadir esa URL como Redirect URI de tipo SPA.
-3. Obtener el Client ID.
-4. Añadirlo en `js/config.js`.
-5. Activar MSAL.
-6. Conectar OneDrive.
-7. Seleccionar el Excel.
-8. Trasladar las fórmulas restantes y las hojas Ingreso/Ahorro/Análisis.
+## Seguridad
+No publiques la URL del webhook en GitHub. La app la guarda solo en el navegador.
+Esta versión todavía NO escribe cambios en OneDrive; solo lee y carga datos.
+El guardado Cloud será el siguiente paso después de verificar la lectura.
