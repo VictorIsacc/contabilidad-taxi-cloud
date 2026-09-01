@@ -42,3 +42,9 @@ El guardado Cloud será el siguiente paso después de verificar la lectura.
 - Corrige la respuesta de Make cuando el Buffer del Excel llega representado como texto hexadecimal.
 - Reconstruye automáticamente los bytes XLSX antes de leer el libro.
 - No requiere ningún cambio adicional en el escenario de Make.
+
+
+## v0.4
+- Adaptada al nuevo Webhook response de Make con `base64(9.Data)`.
+- La PWA decodifica el Base64 a binario XLSX antes de abrir el libro.
+- Verifica que el archivo recibido sea realmente un XLSX.

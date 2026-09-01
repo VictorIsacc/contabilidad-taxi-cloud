@@ -32,43 +32,29 @@ export async function fetchWorkbook(){
     throw new Error(`Make respondió con error ${response.status}.`);
   }
 
-  let buf = await response.arrayBuffer();
-  if(!buf.byteLength) throw new Error("Make no devolvió contenido del Excel.");
+  // La respuesta actual de Make es texto Base64 generado con base64(9.Data).
+  const text = (await response.text()).trim();
+  if(!text) throw new Error("Make no devolvió contenido del Excel.");
 
-  // Make puede devolver el Buffer binario como texto hexadecimal
-  // (por ejemplo: "50 4b 03 04 ..."). Si ocurre, lo reconstruimos
-  // automáticamente antes de entregarlo a SheetJS.
-  const raw = new Uint8Array(buf);
-  let normalized = buf;
+  let normalized;
 
   try{
-    const text = new TextDecoder("utf-8").decode(raw).trim();
-
-    // Acepta "50 4B 03 04", "504B0304", comas o saltos de línea.
-    const compact = text
-      .replace(/0x/gi, "")
-      .replace(/[\s,;:\-]+/g, "");
-
-    const looksHex =
-      compact.length >= 8 &&
-      compact.length % 2 === 0 &&
-      /^[0-9a-f]+$/i.test(compact) &&
-      compact.slice(0, 8).toUpperCase() === "504B0304";
-
-    if(looksHex){
-      const bytes = new Uint8Array(compact.length / 2);
-      for(let i=0;i<bytes.length;i++){
-        bytes[i] = parseInt(compact.slice(i*2, i*2+2), 16);
-      }
-      normalized = bytes.buffer;
+    // Por si Make inserta saltos de línea o espacios.
+    const compact = text.replace(/\s+/g, "");
+    const binary = atob(compact);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0; i<binary.length; i++){
+      bytes[i] = binary.charCodeAt(i);
     }
+    normalized = bytes.buffer;
   }catch(_e){
-    // Si no es texto hexadecimal, se usa el binario original.
+    throw new Error("Make respondió, pero el contenido no está en Base64 válido.");
   }
 
+  // Los .xlsx son contenedores ZIP y empiezan por PK (50 4B).
   const sig = new Uint8Array(normalized, 0, Math.min(4, normalized.byteLength));
   if(sig.length < 4 || sig[0] !== 0x50 || sig[1] !== 0x4B){
-    throw new Error("Make ha devuelto datos, pero todavía no tienen formato XLSX válido.");
+    throw new Error("El contenido recibido no parece un archivo XLSX válido.");
   }
 
   workbookBytes = normalized;
@@ -78,6 +64,7 @@ export async function fetchWorkbook(){
     cellFormula: true,
     cellNF: true
   });
+
   return workbook;
 }
 
