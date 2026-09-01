@@ -1,0 +1,29 @@
+CONTABILIDAD TAXI CLOUD · PASO 1 — GITHUB
+
+Este paquete se sube tal cual a GitHub.
+
+ARCHIVOS IMPORTANTES
+- index.html
+- manifest.webmanifest
+- service-worker.js
+- .nojekyll
+- css/
+- js/
+- icons/
+
+NO MODIFIQUES TODAVÍA
+- js/config.js
+
+Cuando GitHub Pages esté publicado, necesitaremos la dirección exacta de la web.
+Con esa dirección haremos juntos el registro en Microsoft.
+
+PRUEBA LOCAL
+Por seguridad del navegador, no abras index.html directamente con doble clic para probar
+el Service Worker. Puedes usar cualquier servidor local. Por ejemplo, si tienes Python:
+
+  py -m http.server 8000
+
+Luego abre:
+  http://localhost:8000/
+
+La app de GitHub Pages funcionará por HTTPS automáticamente.

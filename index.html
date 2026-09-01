@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f2030">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Contabilidad Taxi">
+  <title>Contabilidad Taxi Cloud</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/favicon.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./css/estilos.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="./icons/icon-192.png" alt="">
+      <div>
+        <strong>Contabilidad Taxi</strong>
+        <span>Cloud · OneDrive</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="installBtn" hidden title="Instalar app">⬇</button>
+      <button class="account-btn" id="accountBtn">
+        <span class="dot" id="cloudDot"></span>
+        <span id="accountText">Microsoft sin conectar</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="hero-card">
+      <div>
+        <span class="eyebrow">CONTABILIDAD TAXI CLOUD</span>
+        <h1>La misma contabilidad, desde móvil o PC</h1>
+        <p>La aplicación será instalable desde GitHub Pages y trabajará con tu libro Excel alojado en OneDrive.</p>
+      </div>
+      <div class="hero-status">
+        <span class="status-label">Estado</span>
+        <strong id="globalStatus">Base web preparada</strong>
+        <small id="globalStatusDetail">Pendiente de registrar el acceso Microsoft.</small>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="contabilidad">Contabilidad</button>
+      <button class="tab" data-tab="ingreso">Ingreso</button>
+      <button class="tab" data-tab="ahorro">Ahorro</button>
+      <button class="tab" data-tab="analisis">Análisis</button>
+      <button class="tab" data-tab="nube">Nube</button>
+    </nav>
+
+    <section class="tabpage active" id="tab-contabilidad">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">DÍA DE TRABAJO</span>
+            <h2>Contabilidad</h2>
+          </div>
+          <input id="workDate" class="date-input" type="date">
+        </div>
+
+        <div class="input-grid">
+          <label><span>Cierre PideTaxi</span><input inputmode="decimal" data-field="cierre_pidetaxi" placeholder="0,00"></label>
+          <label><span>Abonados sin comisión</span><input inputmode="decimal" data-field="abonados_sin_comision" placeholder="0,00"></label>
+          <label><span>Uber</span><input inputmode="decimal" data-field="uber" placeholder="0,00"></label>
+          <label><span>Uber Cash</span><input inputmode="decimal" data-field="ubercash" placeholder="0,00"></label>
+          <label><span>JOIN UP en bruto</span><input inputmode="decimal" data-field="joinup_bruto" placeholder="0,00"></label>
+          <label><span>IMBRIC en bruto</span><input inputmode="decimal" data-field="imbric_bruto" placeholder="0,00"></label>
+          <label><span>Cobro tarjeta</span><input inputmode="decimal" data-field="cobro_tarjeta" placeholder="0,00"></label>
+          <label><span>Lavado / Gasolina</span><input inputmode="decimal" data-field="gasolina_lavado" placeholder="0,00"></label>
+        </div>
+
+        <div class="results-grid">
+          <div><span>Suma total</span><strong id="rSuma">0,00 €</strong></div>
+          <div><span>Total comisiones</span><strong id="rComisiones">—</strong></div>
+          <div><span>50%</span><strong id="rMitad">—</strong></div>
+          <div class="accent"><span>Total jefe</span><strong id="rJefe">—</strong></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="saveDay">Guardar día</button>
+          <button class="btn" id="loadDay">Cargar día</button>
+          <button class="btn ghost" id="markRest">Marcar descanso</button>
+        </div>
+        <p class="notice">En esta versión base los datos se guardan temporalmente en el navegador. Al conectar Microsoft, este almacenamiento se sustituirá por el Excel de OneDrive.</p>
+      </div>
+    </section>
+
+    <section class="tabpage" id="tab-ingreso">
+      <div class="card placeholder-card">
+        <span class="eyebrow">INGRESO</span>
+        <h2>Preparado para migrar</h2>
+        <p>Esta pestaña conservará el control de billetes, remanente e ingresos del programa de escritorio.</p>
+      </div>
+    </section>
+
+    <section class="tabpage" id="tab-ahorro">
+      <div class="card placeholder-card">
+        <span class="eyebrow">AHORRO</span>
+        <h2>Preparado para migrar</h2>
+        <p>Se mantendrá el registro de cantidades y detalle, escribiendo posteriormente sobre la hoja Ahorro del libro en OneDrive.</p>
+      </div>
+    </section>
+
+    <section class="tabpage" id="tab-analisis">
+      <div class="card placeholder-card">
+        <span class="eyebrow">ANÁLISIS</span>
+        <h2>Totales, medias y PDF</h2>
+        <p>La versión Cloud reproducirá el análisis de la v5.18, incluyendo exclusión automática de conceptos sin movimiento y liquidación.</p>
+        <div class="pdf-preview">
+          <div><strong>Detallado</strong><span>PDF días trabajados</span></div>
+          <div><strong>Acumulado</strong><span>Totales y medias</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tabpage" id="tab-nube">
+      <div class="cloud-grid">
+        <div class="card cloud-card">
+          <span class="eyebrow">MICROSOFT</span>
+          <h2>1. Iniciar sesión</h2>
+          <p>Cuando registremos la aplicación en Microsoft, este botón abrirá el inicio de sesión oficial de Microsoft.</p>
+          <button class="btn microsoft" id="loginMicrosoft">Conectar con Microsoft</button>
+          <small class="muted">No se guarda ninguna contraseña en GitHub.</small>
+        </div>
+
+        <div class="card cloud-card">
+          <span class="eyebrow">ONEDRIVE</span>
+          <h2>2. Libro de contabilidad</h2>
+          <p>Después del inicio de sesión seleccionaremos el Excel que utilizará Contabilidad Taxi.</p>
+          <div class="file-state">
+            <span>Libro seleccionado</span>
+            <strong id="workbookName">Ninguno</strong>
+          </div>
+          <button class="btn" id="selectWorkbook" disabled>Seleccionar Excel de OneDrive</button>
+        </div>
+
+        <div class="card cloud-card">
+          <span class="eyebrow">CONFIGURACIÓN</span>
+          <h2>Datos técnicos</h2>
+          <dl>
+            <div><dt>Client ID</dt><dd id="clientState">Pendiente</dd></div>
+            <div><dt>GitHub Pages</dt><dd>Preparado</dd></div>
+            <div><dt>PWA</dt><dd id="pwaState">Comprobando…</dd></div>
+            <div><dt>OneDrive</dt><dd id="driveState">Sin conectar</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
