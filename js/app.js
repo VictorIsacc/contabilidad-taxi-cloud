@@ -4,6 +4,7 @@ import {
   getWebhookUrl, saveWebhookUrl, clearWebhookUrl, fetchWorkbook,
   workbookSummary, findContabilidadDate
 } from "./cloud-data.js";
+import { initLegacyTabs } from "./legacy-tabs.js";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
@@ -26,10 +27,13 @@ function fillConta(data={}){
 function updateCalc(source=null){
   const raw=source || collectConta();
   const r=calcularDia(raw);
-  $("rSuma").textContent = source && source.suma_total!=="" ? euro(source.suma_total) : euro(r.suma_total);
-  $("rMitad").textContent = source && source.mitad!=="" ? euro(source.mitad) : euro(r.mitad);
-  $("rComisiones").textContent = source && source.total_comisiones!=="" ? euro(source.total_comisiones) : "Pendiente fórmula";
-  $("rJefe").textContent = source && source.total_jefe!=="" ? euro(source.total_jefe) : "Pendiente fórmula";
+  const value=(key)=>source && source[key]!=="" && source[key]!==undefined
+    ? source[key]
+    : r[key];
+  $("rSuma").textContent = euro(value("suma_total"));
+  $("rMitad").textContent = euro(value("mitad"));
+  $("rComisiones").textContent = euro(value("total_comisiones"));
+  $("rJefe").textContent = euro(value("total_jefe"));
 }
 function setCloudStatus(){
   const url=getWebhookUrl();
@@ -70,13 +74,23 @@ async function loadCloudWorkbook(showToast=true){
   }
 }
 
-qsa(".tab").forEach(btn=>btn.addEventListener("click",()=>{
+$("workDate").value=isoToday();
+const legacyTabs=initLegacyTabs({
+  ensureWorkbook:loadCloudWorkbook,
+  toast,
+  getDate:()=>$("workDate").value
+});
+
+qsa(".tab").forEach(btn=>btn.addEventListener("click",async()=>{
   qsa(".tab").forEach(x=>x.classList.toggle("active",x===btn));
   qsa(".tabpage").forEach(p=>p.classList.toggle("active",p.id==="tab-"+btn.dataset.tab));
+  if(btn.dataset.loaded)return;
+  if(btn.dataset.tab==="ingreso") await legacyTabs.loadIncome();
+  if(btn.dataset.tab==="ahorro") await legacyTabs.loadSaving();
+  if(btn.dataset.tab==="analisis") await legacyTabs.loadAnalysis();
+  btn.dataset.loaded="1";
 }));
 qsa("[data-field]").forEach(i=>i.addEventListener("input",()=>updateCalc()));
-
-$("workDate").value=isoToday();
 
 $("saveDay").addEventListener("click",()=>{
   saveLocalDay($("workDate").value,{descanso:false,...collectConta()});

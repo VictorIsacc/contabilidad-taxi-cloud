@@ -48,3 +48,10 @@ El guardado Cloud será el siguiente paso después de verificar la lectura.
 - Adaptada al nuevo Webhook response de Make con `base64(9.Data)`.
 - La PWA decodifica el Base64 a binario XLSX antes de abrir el libro.
 - Verifica que el archivo recibido sea realmente un XLSX.
+
+
+## v0.5
+- Soporta la forma en la que Make representa el Buffer de OneDrive:
+  Base64 -> texto hexadecimal -> bytes XLSX.
+- Mantiene compatibilidad con Base64 binario directo y con hexadecimal sin Base64.
+- No requiere nuevos cambios en Make.
