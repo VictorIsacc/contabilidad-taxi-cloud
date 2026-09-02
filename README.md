@@ -1,13 +1,13 @@
-# Contabilidad Taxi Cloud · GitHub Pages v0.2
+# Contabilidad Taxi Cloud · GitHub Pages v0.9
 
-## Novedad principal
-La PWA puede llamar al webhook de Make, recibir el Excel de OneDrive y leerlo directamente
-en el navegador.
+## Estado comprobado
+La PWA recibe desde Make el Excel de OneDrive y lo lee directamente en el navegador con SheetJS.
+Se han reconocido las hojas reales `Contabilidad`, `Ingreso` y `Ahorro`.
 
 La URL del webhook NO se incluye en el repositorio. Se introduce desde la pestaña Nube y
 se guarda únicamente en `localStorage` de ese teléfono/PC.
 
-## Antes de probar desde GitHub Pages: un único ajuste en Make
+## Lectura desde OneDrive
 En el módulo final `Webhook response`, añade un tercer Custom header:
 
 Key:
@@ -22,7 +22,16 @@ Los otros dos headers que ya tienes se mantienen:
 
 Esto permite que la PWA de GitHub Pages lea el Excel mediante `fetch`.
 
-## Cómo probar
+Para que GitHub Pages pueda leer el Excel, el módulo final `Webhook response` del escenario
+de lectura debe conservar este encabezado:
+
+Key:
+Access-Control-Allow-Origin
+
+Value:
+https://victorisacc.github.io
+
+## Cómo comprobar la lectura
 1. Sube esta versión al mismo repositorio sustituyendo los archivos anteriores.
 2. Abre la web de GitHub Pages.
 3. Entra en la pestaña Nube.
@@ -32,10 +41,22 @@ Esto permite que la PWA de GitHub Pages lea el Excel mediante `fetch`.
 7. Deben aparecer las hojas del libro.
 8. En Contabilidad selecciona una fecha existente y pulsa Cargar día.
 
+## Guardado en OneDrive
+La pestaña Nube ya separa dos URLs privadas:
+
+- Lectura: descarga el Excel desde OneDrive.
+- Guardado: preparada para enviar a Make la fecha, número de fila validado y solo los ocho
+  importes manuales de Contabilidad.
+
+El escenario de guardado todavía debe configurarse en Make con Microsoft Graph. No se debe
+usar "Actualizar una fila" porque sobrescribe una fila completa. El flujo seguro es:
+
+1. Verificar la fecha recibida contra la columna A de `Contabilidad`.
+2. Actualizar solo F, G, H, I, J, M, U y V de esa fila.
+3. Dejar intactas todas las fórmulas, formatos y demás columnas.
+
 ## Seguridad
-No publiques la URL del webhook en GitHub. La app la guarda solo en el navegador.
-Esta versión todavía NO escribe cambios en OneDrive; solo lee y carga datos.
-El guardado Cloud será el siguiente paso después de verificar la lectura.
+No publiques ninguna URL de webhook en GitHub. La app las guarda solo en el navegador de cada dispositivo.
 
 
 ## v0.3

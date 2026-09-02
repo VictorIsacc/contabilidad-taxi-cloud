@@ -1,10 +1,11 @@
-import { calcularDia, euro } from "./calculos.js";
-import { saveLocalDay, loadLocalDay, markLocalRest } from "./storage.js";
+import { calcularDia, euro, num } from "./calculos.js?v=20260903a";
+import { saveLocalDay, loadLocalDay, markLocalRest } from "./storage.js?v=20260902c";
 import {
-  getWebhookUrl, saveWebhookUrl, clearWebhookUrl, fetchWorkbook,
-  workbookSummary, findContabilidadDate
-} from "./cloud-data.js";
-import { initLegacyTabs } from "./legacy-tabs.js";
+  getWebhookUrl, getWorkbook, saveWebhookUrl, clearWebhookUrl, fetchWorkbook,
+  workbookSummary, findContabilidadDate, nextPendingContabilidad,
+  getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues
+} from "./cloud-data.js?v=20260903b";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260903a";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
@@ -37,10 +38,13 @@ function updateCalc(source=null){
 }
 function setCloudStatus(){
   const url=getWebhookUrl();
+  const writeUrl=getWriteWebhookUrl();
   if($("makeWebhookUrl")) $("makeWebhookUrl").value=url;
+  if($("makeWriteWebhookUrl")) $("makeWriteWebhookUrl").value=writeUrl;
   if($("makeState")) $("makeState").textContent=url?"Configurada en este dispositivo":"Sin configurar";
+  if($("makeWriteState")) $("makeWriteState").textContent=writeUrl?"Preparado para guardar":"Pendiente de configurar";
   $("cloudDot")?.classList.toggle("online",!!url);
-  if($("accountText")) $("accountText").textContent=url?"Make + OneDrive configurado":"Nube sin configurar";
+  if($("accountText")) $("accountText").textContent=url?(writeUrl?"Lectura y guardado configurados":"Make + OneDrive configurado"):"Nube sin configurar";
 }
 function renderSheets(list){
   const box=$("sheetSummary");
@@ -81,6 +85,36 @@ const legacyTabs=initLegacyTabs({
   getDate:()=>$("workDate").value
 });
 
+function changeWorkDate(days){
+  const input=$("workDate"),date=new Date(`${input.value}T12:00:00`);
+  if(Number.isNaN(date.getTime())) return;
+  date.setDate(date.getDate()+days);
+  input.value=date.toISOString().slice(0,10);
+}
+function addDailyControls(){
+  const host=document.querySelector("#tab-contabilidad .card");
+  if(!host || $("dailyControls")) return;
+  const controls=document.createElement("div");
+  controls.id="dailyControls";
+  controls.className="daily-controls";
+  controls.innerHTML=`<button class="btn" id="todayDate">● Hoy</button><button class="btn" id="previousDate">‹ Día</button><button class="btn" id="nextDate">Día ›</button><button class="btn" id="loadCurrentDay">↻ Cargar día</button><button class="btn primary" id="loadBundle">⇄ Contabilidad + Ingreso</button><button class="btn accent" id="nextPending">⚑ Siguiente pendiente</button>`;
+  host.querySelector(".card-head")?.after(controls);
+  $("todayDate").onclick=()=>{$("workDate").value=isoToday();toast("Fecha de hoy seleccionada");};
+  $("previousDate").onclick=()=>changeWorkDate(-1);
+  $("nextDate").onclick=()=>changeWorkDate(1);
+  $("loadCurrentDay").onclick=()=>$("loadDay").click();
+  $("loadBundle").onclick=async()=>{ $("loadDay").click(); await legacyTabs.loadIncome(); };
+  $("nextPending").onclick=async()=>{
+    if(!getWebhookUrl()){toast("Primero guarda la URL privada del webhook de Make.");return;}
+    if(!getWorkbook() && !await loadCloudWorkbook(false)) return;
+    const pending=nextPendingContabilidad($("workDate").value);
+    if(!pending){toast("No hay días pendientes a partir de la fecha seleccionada.");return;}
+    $("workDate").value=pending.date;
+    toast(`Siguiente pendiente: ${pending.date} · fila ${pending.row}`);
+  };
+}
+addDailyControls();
+
 qsa(".tab").forEach(btn=>btn.addEventListener("click",async()=>{
   qsa(".tab").forEach(x=>x.classList.toggle("active",x===btn));
   qsa(".tabpage").forEach(p=>p.classList.toggle("active",p.id==="tab-"+btn.dataset.tab));
@@ -92,9 +126,39 @@ qsa(".tab").forEach(btn=>btn.addEventListener("click",async()=>{
 }));
 qsa("[data-field]").forEach(i=>i.addEventListener("input",()=>updateCalc()));
 
-$("saveDay").addEventListener("click",()=>{
-  saveLocalDay($("workDate").value,{descanso:false,...collectConta()});
-  toast("Guardado local de prueba. El guardado en OneDrive será el siguiente paso.");
+$("saveDay").addEventListener("click",async()=>{
+  const date=$("workDate").value;
+  const values=collectConta();
+  saveLocalDay(date,{descanso:false,...values});
+  if(!getWriteWebhookUrl()){
+    toast("Guardado local. Configura el webhook de guardado para escribir en OneDrive.");
+    return;
+  }
+  try{
+    let row=findContabilidadDate(date);
+    if(!row){
+      const loaded=await loadCloudWorkbook(false);
+      if(loaded) row=findContabilidadDate(date);
+    }
+    if(!row) throw new Error("No existe una fila para esta fecha en la hoja Contabilidad.");
+    await saveContabilidadValues({
+      fecha:date,
+      fila:row.row,
+      valores:{
+        cierre_pidetaxi:num(values.cierre_pidetaxi),
+        abonados_sin_comision:num(values.abonados_sin_comision),
+        uber:num(values.uber),
+        ubercash:num(values.ubercash),
+        joinup_bruto:num(values.joinup_bruto),
+        imbric_bruto:num(values.imbric_bruto),
+        cobro_tarjeta:num(values.cobro_tarjeta),
+        gasolina_lavado:num(values.gasolina_lavado)
+      }
+    });
+    toast(`Guardado en OneDrive · fila ${row.row}`);
+  }catch(e){
+    toast(`No se ha guardado en OneDrive: ${e.message}`);
+  }
 });
 
 $("loadDay").addEventListener("click",async()=>{
@@ -133,6 +197,17 @@ $("saveWebhook")?.addEventListener("click",()=>{
 $("clearWebhook")?.addEventListener("click",()=>{
   clearWebhookUrl(); setCloudStatus(); $("makeWebhookUrl").value="";
   toast("URL privada eliminada de este dispositivo");
+});
+$("saveWriteWebhook")?.addEventListener("click",()=>{
+  try{
+    saveWriteWebhookUrl($("makeWriteWebhookUrl").value);
+    setCloudStatus();
+    toast("Webhook de guardado guardado en este dispositivo");
+  }catch(e){toast(e.message)}
+});
+$("clearWriteWebhook")?.addEventListener("click",()=>{
+  clearWriteWebhookUrl(); setCloudStatus(); $("makeWriteWebhookUrl").value="";
+  toast("URL de guardado eliminada de este dispositivo");
 });
 $("testCloud")?.addEventListener("click",()=>loadCloudWorkbook(true));
 

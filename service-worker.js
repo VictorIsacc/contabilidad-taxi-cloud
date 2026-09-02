@@ -1,7 +1,7 @@
-const CACHE="contabilidad-taxi-cloud-v0.5";
+const CACHE="contabilidad-taxi-cloud-v0.9";
 const ASSETS=[
   "./","./index.html","./css/estilos.css","./js/app.js","./js/config.js",
-  "./js/auth.js","./js/onedrive.js","./js/calculos.js","./js/storage.js","./js/cloud-data.js",
+  "./js/auth.js","./js/onedrive.js","./js/calculos.js","./js/storage.js","./js/cloud-data.js","./js/legacy-tabs.js",
   "./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./icons/favicon.png"
 ];
 self.addEventListener("install",event=>{

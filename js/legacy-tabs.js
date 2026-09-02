@@ -1,8 +1,8 @@
-import { euro, num } from "./calculos.js";
+import { euro, num } from "./calculos.js?v=20260902c";
 import {
   getWorkbook, findIngresoDate, loadAhorroRow, findAhorroDate,
   nextFreeAhorroRow, contabilidadPeriod
-} from "./cloud-data.js";
+} from "./cloud-data.js?v=20260902c";
 
 const $=id=>document.getElementById(id);
 const INCOME_INPUTS=[["b100","100 €",100],["b50","50 €",50],["b20","20 €",20],["b10","10 €",10],["b5","5 €",5]];
@@ -40,7 +40,7 @@ function incomeHtml(){
     <div class="card feature-card income-card">
       <div class="card-head"><div><span class="eyebrow">EFECTIVO</span><h2>Ingreso del día</h2></div><span class="row-pill">Fila <b id="ingresoRow">—</b></span></div>
       <div class="bill-grid" id="ingresoInputs">${INCOME_INPUTS.map(([key,label])=>`<label><span>${label}</span><input data-income="${key}" inputmode="numeric" placeholder="0"></label>`).join("")}</div>
-      <div class="actions"><button class="btn primary" id="loadIngreso">Cargar desde Excel</button><button class="btn" id="saveIngresoDraft">Guardar borrador local</button></div>
+      <div class="actions"><button class="btn primary" id="loadIngreso">Cargar desde Excel</button><button class="btn" id="loadIngresoDraft">Recuperar borrador</button><button class="btn" id="saveIngresoDraft">Guardar borrador local</button></div>
       <p class="notice">La lectura ya usa la hoja Ingreso real. El borrador no modifica todavía el Excel de OneDrive.</p>
     </div>
     <div class="card feature-card">
@@ -65,7 +65,7 @@ function savingHtml(){
       <div class="inline-tools"><input id="ahorroSearchDate" class="mini-input" placeholder="dd/mm/aaaa"><button class="btn" id="findAhorro">Buscar fecha</button><button class="btn" id="freeAhorro">Siguiente libre</button></div>
       <div class="saving-grid" id="ahorroInputs">${SAVING_INPUTS.map(([key,label])=>`<label><span>${label}</span><input data-saving="${key}" ${key==="date"?'placeholder="dd/mm/aaaa"':'inputmode="decimal"'}></label>`).join("")}</div>
       <div class="single-result"><span>Ingreso calculado</span><strong id="ahorroIngreso">0,00 €</strong></div>
-      <div class="actions"><button class="btn primary" id="loadAhorro">Cargar fila</button><button class="btn" id="saveAhorroDraft">Guardar borrador local</button></div>
+      <div class="actions"><button class="btn primary" id="loadAhorro">Cargar fila</button><button class="btn" id="loadAhorroDraft">Recuperar borrador</button><button class="btn" id="saveAhorroDraft">Guardar borrador local</button></div>
       <p class="notice">La lectura y búsqueda usan la hoja Ahorro real. El borrador permanece en este dispositivo.</p>
     </div>
     <div class="card feature-card">
@@ -129,6 +129,16 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate}){
     fillIncome(result); toast(`Ingreso cargado desde la fila ${result.row}`);
   };
   $("loadIngreso").onclick=loadIncome;
+  $("loadIngresoDraft").onclick=()=>{
+    const saved=localStorage.getItem(`taxiIngresoDraft:${getDate()}`);
+    if(!saved){toast("No hay borrador de Ingreso para esta fecha");return;}
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll("[data-income]").forEach(i=>i.value=data[i.dataset.income]??"");
+      document.querySelector("[data-income]")?.dispatchEvent(new Event("input"));
+      toast("Borrador de Ingreso recuperado");
+    }catch{toast("El borrador de Ingreso no se pudo leer");}
+  };
   $("saveIngresoDraft").onclick=()=>{
     const data={}; document.querySelectorAll("[data-income]").forEach(i=>data[i.dataset.income]=i.value);
     localStorage.setItem(`taxiIngresoDraft:${getDate()}`,JSON.stringify(data)); toast("Borrador de Ingreso guardado en este dispositivo");
@@ -176,6 +186,17 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate}){
     const data={row:$("ahorroRow").value};document.querySelectorAll("[data-saving]").forEach(i=>data[i.dataset.saving]=i.value);
     localStorage.setItem(`taxiAhorroDraft:${data.row}`,JSON.stringify(data));toast("Borrador de Ahorro guardado en este dispositivo");
   };
+  $("loadAhorroDraft").onclick=()=>{
+    const row=$("ahorroRow").value;
+    const saved=localStorage.getItem(`taxiAhorroDraft:${row}`);
+    if(!saved){toast(`No hay borrador de Ahorro para la fila ${row}`);return;}
+    try{
+      const data=JSON.parse(saved);
+      document.querySelectorAll("[data-saving]").forEach(i=>i.value=data[i.dataset.saving]??"");
+      document.querySelector('[data-saving="date"]')?.dispatchEvent(new Event("input"));
+      toast("Borrador de Ahorro recuperado");
+    }catch{toast("El borrador de Ahorro no se pudo leer");}
+  };
   document.querySelectorAll("[data-saving]").forEach(input=>input.addEventListener("input",()=>{
     const denoms={b100:100,b50:50,b20:20,b10:10,b5:5};
     const total=Object.entries(denoms).reduce((sum,[key,value])=>sum+num(document.querySelector(`[data-saving="${key}"]`).value)*value,0);
@@ -222,24 +243,39 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate}){
   const exportPdf=async detailed=>{
     if(!currentPeriod){toast("Primero carga un mes o un rango para exportar");return;}
     try{
-      const JsPDF=await loadPdf(),doc=new JsPDF({unit:"mm",format:"a4"});
-      const margin=16,width=178;let y=18;
+      const JsPDF=await loadPdf(),doc=new JsPDF({unit:"mm",format:"a4",orientation:detailed?"landscape":"portrait"});
+      const margin=16,pageWidth=detailed?297:210,width=detailed?265:178;let y=18;
       const title=detailed?"Contabilidad Taxi · Informe detallado":"Contabilidad Taxi · Informe acumulado";
-      doc.setFillColor(13,35,53);doc.rect(0,0,210,33,"F");doc.setTextColor(255,255,255);doc.setFontSize(17);doc.text(title,margin,15);doc.setFontSize(10);doc.text(currentPeriod.label,margin,23);doc.text(`Generado: ${pdfDate()}`,margin,28);
+      doc.setFillColor(13,35,53);doc.rect(0,0,pageWidth,33,"F");doc.setTextColor(255,255,255);doc.setFontSize(17);doc.text(title,margin,15);doc.setFontSize(10);doc.text(currentPeriod.label,margin,23);doc.text(`Generado: ${pdfDate()}`,margin,28);
       doc.setTextColor(20,42,58);doc.setFontSize(12);y=44;
       const addLine=(label,value)=>{if(y>278){doc.addPage();y=18;}doc.setFontSize(10);doc.text(label,margin,y);doc.text(euro(value),margin+width,y,{align:"right"});doc.setDrawColor(215,225,232);doc.line(margin,y+2,margin+width,y+2);y+=7;};
       if(detailed){
-        doc.setFontSize(12);doc.text("Resumen de liquidación",margin,y);y+=8;
-        [["Nómina",num($("pdfNomina").value)],["Total jefe",chiefTotal],["A percibir",num($("pdfNomina").value)+chiefTotal],["Efectivo indicado",[...document.querySelectorAll(".cash-qty")].reduce((s,i)=>s+num(i.value)*num(i.dataset.denom),0)]].forEach(([label,value])=>addLine(label,value));
-        y+=4;doc.setFontSize(12);doc.text("Totales de días trabajados",margin,y);y+=8;
-        nonEmptyPeriodRows("total").forEach(([label,value])=>addLine(label,value));
+        const fields=(currentPeriod.detailFields||[]).filter(field=>currentPeriod.detailRows.some(row=>Math.abs(num(row.values[field.key]))>.0001));
+        const excluded=(currentPeriod.detailFields||[]).filter(field=>!fields.includes(field)).map(field=>field.label);
+        const allColumns=[{key:"date",label:"Fecha"},{key:"day",label:"Día"},...fields];
+        const columnWidth=width/allColumns.length,headerHeight=10,rowHeight=6;
+        const drawDetailHeader=at=>{doc.setFillColor(33,86,123);doc.rect(margin,at,width,headerHeight,"F");doc.setTextColor(255,255,255);doc.setFontSize(5.7);allColumns.forEach((field,index)=>{const x=margin+index*columnWidth;const lines=doc.splitTextToSize(field.label,columnWidth-1);doc.text(lines,x+columnWidth/2,at+3.5,{align:"center"});});};
+        y=40;drawDetailHeader(y);y+=headerHeight;
+        currentPeriod.detailRows.forEach((row,index)=>{
+          if(y>198){doc.addPage();y=16;drawDetailHeader(y);y+=headerHeight;}
+          doc.setFillColor(index%2?249:238,index%2?251:246,index%2?253:249);doc.rect(margin,y,width,rowHeight,"F");doc.setDrawColor(215,225,232);doc.rect(margin,y,width,rowHeight,"S");doc.setTextColor(22,48,69);doc.setFontSize(5.9);
+          allColumns.forEach((field,col)=>{const value=field.key==="date"?isoToDisplay(row.date):field.key==="day"?row.day:euro(row.values[field.key]);doc.text(String(value),margin+col*columnWidth+columnWidth/2,y+4,{align:"center"});});y+=rowHeight;
+        });
+        if(y>198){doc.addPage();y=16;drawDetailHeader(y);y+=headerHeight;}
+        doc.setFillColor(224,238,247);doc.rect(margin,y,width,rowHeight,"F");doc.setDrawColor(97,139,166);doc.rect(margin,y,width,rowHeight,"S");doc.setTextColor(20,58,82);doc.setFontSize(6.2);doc.text("TOTAL",margin+columnWidth,y+4,{align:"center"});
+        fields.forEach((field,index)=>{const total=currentPeriod.detailRows.reduce((sum,row)=>sum+num(row.values[field.key]),0);doc.text(euro(total),margin+(index+2)*columnWidth+columnWidth/2,y+4,{align:"center"});});y+=rowHeight;
+        if(excluded.length){doc.setTextColor(84,105,121);doc.setFontSize(7);doc.text(`Sin movimientos en el período · excluidas: ${excluded.join(", ")}`,margin,y+5);y+=10;}
+        if(y>180){doc.addPage();y=18;}
+        const payroll=num($("pdfNomina").value),cash=[...document.querySelectorAll(".cash-qty")].reduce((s,i)=>s+num(i.value)*num(i.dataset.denom),0),receive=payroll+chiefTotal;
+        doc.setFillColor(21,57,82);doc.roundedRect(margin,y,width,25,3,3,"F");doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text("LIQUIDACIÓN",margin+4,y+7);
+        [["Nómina",payroll],["Total jefe",chiefTotal],["A percibir",receive],["Efectivo",cash]].forEach(([label,value],index)=>{const x=margin+index*(width/4);doc.setTextColor(193,215,230);doc.setFontSize(7);doc.text(label,x+width/8,y+14,{align:"center"});doc.setTextColor(value<0?255:255,value<0?126:255,value<0?126:255);doc.setFontSize(12);doc.text(euro(value),x+width/8,y+21,{align:"center"});});
       }else{
         /* Maquetación equivalente al informe acumulado de la aplicación de escritorio. */
         const rangeText=currentPeriod.label.replace("Acumulado del mes ","Mes ").replace("Acumulado del rango ","Rango ");
         doc.setFillColor(21,57,82);doc.rect(0,0,210,30,"F");doc.setTextColor(255,255,255);doc.setFontSize(18);doc.text("Contabilidad Taxi - Acumulado",margin,14);doc.setFontSize(10);doc.text(rangeText,margin,22);
         const cards=[["Días con fecha",currentPeriod.stats.days,[230,240,250],[41,125,190]],["Días trabajados",currentPeriod.stats.workdays,[231,248,239],[33,139,91]],["Días de descanso",currentPeriod.stats.restdays,[253,242,230],[194,116,24]]];
         cards.forEach(([label,value,bg,ink],index)=>{const x=margin+index*60;doc.setFillColor(...bg);doc.roundedRect(x,37,55,20,3,3,"F");doc.setDrawColor(...ink);doc.roundedRect(x,37,55,20,3,3,"S");doc.setTextColor(75,99,118);doc.setFontSize(8);doc.text(label,x+3,43);doc.setTextColor(...ink);doc.setFontSize(15);doc.text(String(value),x+51,52,{align:"right"});});
-        const rows=nonEmptyPeriodRows("total").map(([label,total])=>[label,total,currentPeriod.averages[PERIOD_FIELDS.find(([,name])=>name===label)?.[0]]??0]);
+        const rows=nonEmptyPeriodRows("total").filter(([label])=>label!=="Me queda").map(([label,total])=>[label,total,currentPeriod.averages[PERIOD_FIELDS.find(([,name])=>name===label)?.[0]]??0]);
         let tableY=67,rowH=8;doc.setFillColor(33,86,123);doc.roundedRect(margin,tableY,width,9,2,2,"F");doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text("CONCEPTO",margin+3,tableY+6);doc.text("TOTAL DEL PERÍODO",margin+118,tableY+6,{align:"right"});doc.text("MEDIA / DÍA TRABAJADO",margin+width-3,tableY+6,{align:"right"});tableY+=9;
         rows.forEach(([label,total,average],index)=>{if(tableY>257){doc.addPage();tableY=18;}doc.setFillColor(index%2?248:238,index%2?250:245,index%2?252:248);doc.rect(margin,tableY,width,rowH,"F");doc.setDrawColor(211,224,233);doc.rect(margin,tableY,width,rowH,"S");doc.setTextColor(23,49,69);doc.setFontSize(9);doc.text(label,margin+3,tableY+5.4);doc.text(euro(total),margin+118,tableY+5.4,{align:"right"});doc.text(euro(average),margin+width-3,tableY+5.4,{align:"right"});tableY+=rowH;});
         if($("includeSettlementPdf").checked){

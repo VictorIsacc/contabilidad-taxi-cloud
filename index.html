@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/favicon.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./css/estilos.css">
+  <link rel="stylesheet" href="./css/estilos.css?v=20260902">
 </head>
 <body>
   <header class="topbar">
@@ -125,7 +125,7 @@
           <h2>Conexión privada al Excel</h2>
           <p>La URL del webhook se guarda únicamente en este navegador. No se escribe en GitHub ni en los archivos de la aplicación.</p>
           <label class="cloud-input-label">
-            <span>URL privada del webhook de Make</span>
+            <span>URL privada para leer el Excel desde Make</span>
             <input id="makeWebhookUrl" class="cloud-url-input" type="password" autocomplete="off" placeholder="https://hook.eu1.make.com/...">
           </label>
           <div class="actions">
@@ -134,6 +134,16 @@
             <button class="btn ghost" id="clearWebhook">Olvidar URL</button>
           </div>
           <small class="muted">En cada teléfono o PC solo tendrás que guardar esta URL una vez.</small>
+          <hr>
+          <label class="cloud-input-label">
+            <span>URL privada para guardar en OneDrive mediante Make</span>
+            <input id="makeWriteWebhookUrl" class="cloud-url-input" type="password" autocomplete="off" placeholder="https://hook.eu1.make.com/...">
+          </label>
+          <div class="actions">
+            <button class="btn primary" id="saveWriteWebhook">Guardar URL de guardado</button>
+            <button class="btn ghost" id="clearWriteWebhook">Olvidar URL de guardado</button>
+          </div>
+          <small class="muted">Esta segunda URL solo se usará para guardar los ocho importes manuales del día.</small>
         </div>
 
         <div class="card cloud-card">
@@ -142,6 +152,10 @@
           <div class="file-state">
             <span>Conexión Make</span>
             <strong id="makeState">Sin configurar</strong>
+          </div>
+          <div class="file-state">
+            <span>Guardado en OneDrive</span>
+            <strong id="makeWriteState">Pendiente de configurar</strong>
           </div>
           <div class="file-state">
             <span>Excel recibido</span>
@@ -165,6 +179,6 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js?v=20260903b"></script>
 </body>
 </html>

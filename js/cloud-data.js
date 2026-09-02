@@ -1,4 +1,5 @@
 const WEBHOOK_KEY = "taxiMakeWebhookUrl";
+const WRITE_WEBHOOK_KEY = "taxiMakeWriteWebhookUrl";
 let workbook = null;
 let workbookBytes = null;
 
@@ -17,6 +18,42 @@ export function saveWebhookUrl(url){
 
 export function clearWebhookUrl(){
   localStorage.removeItem(WEBHOOK_KEY);
+}
+
+function validateMakeWebhook(url){
+  const clean = String(url || "").trim();
+  if(!/^https:\/\/hook\.[^/]+\.make\.com\//i.test(clean)){
+    throw new Error("La dirección no parece una URL válida de webhook de Make.");
+  }
+  return clean;
+}
+
+export function getWriteWebhookUrl(){
+  return localStorage.getItem(WRITE_WEBHOOK_KEY) || "";
+}
+
+export function saveWriteWebhookUrl(url){
+  const clean = validateMakeWebhook(url);
+  localStorage.setItem(WRITE_WEBHOOK_KEY, clean);
+  return clean;
+}
+
+export function clearWriteWebhookUrl(){
+  localStorage.removeItem(WRITE_WEBHOOK_KEY);
+}
+
+export async function saveContabilidadValues(payload){
+  const url = getWriteWebhookUrl();
+  if(!url) throw new Error("Primero guarda la URL del webhook de guardado de Make.");
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({action:"guardar_contabilidad", ...payload})
+  });
+  const body = (await response.text()).trim();
+  if(!response.ok) throw new Error(body || `Make respondió con error ${response.status}.`);
+  if(/^error\b/i.test(body)) throw new Error(body);
+  return body;
 }
 
 export async function fetchWorkbook(){
@@ -101,7 +138,8 @@ export async function fetchWorkbook(){
   }
 
   if(!normalized){
-    throw new Error("Make ha respondido, pero no he podido reconstruir el archivo XLSX.");
+    const hint = text.slice(0, 24).replace(/[^\w+\/=.-]/g, " ");
+    throw new Error(`Make ha respondido, pero no he podido reconstruir el archivo XLSX (${text.length} caracteres; inicio: ${hint}).`);
   }
 
   workbookBytes = normalized;
@@ -321,6 +359,19 @@ export function findAhorroDate(isoDate){
   return row>=2 && row<=16 ? loadAhorroRow(row) : null;
 }
 
+export function nextPendingContabilidad(isoStart){
+  if(!workbook) throw new Error("Primero carga el Excel desde OneDrive.");
+  const ws=workbook.Sheets["Contabilidad"];
+  const range=ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : {e:{r:0}};
+  const inputs=["F","G","H","I","J","M","U","V"];
+  for(let row=5;row<=range.e.r+1;row++){
+    const date=excelDateToISO(cell(ws, `A${row}`));
+    if(!date || date<isoStart || isRest(cell(ws, `E${row}`))) continue;
+    if(inputs.every(col=>Math.abs(numberValue(cell(ws, `${col}${row}`)))<.0001)) return {row,date};
+  }
+  return null;
+}
+
 export function nextFreeAhorroRow(){
   if(!workbook) throw new Error("Primero carga el Excel desde OneDrive.");
   const ws=workbook.Sheets["Ahorro"];
@@ -333,6 +384,19 @@ const PERIOD_FIELDS=[
   ["mes_ubercash","I"],["mes_joinup_bruto","J"],["mes_imbric_bruto","M"],["mes_total_abonados_neto","P"],
   ["mes_total_comisiones","Q"],["mes_mitad","S"],["mes_seguro","T"],["mes_cobro_tarjeta","U"],
   ["mes_gasolina_lavado","V"],["mes_total_jefe","W"],["mes_total_jefe_seguro","X"],["mes_me_queda","Y"]
+];
+
+// Campos del informe detallado. Se excluyen de raíz las columnas auxiliares
+// de descanso y se muestran solo si tienen movimiento en el período.
+const DETAIL_FIELDS=[
+  ["suma_total","E","Suma"],["cierre_pidetaxi","F","PideTaxi"],
+  ["abonados_sin_comision","G","Abonados"],["uber","H","Uber"],["ubercash","I","Uber Cash"],
+  ["joinup_bruto","J","JOIN bruto"],["joinup_neto","K","JOIN neto"],["comision_joinup","L","Com. JOIN"],
+  ["imbric_bruto","M","IMBRIC bruto"],["imbric_neto","N","IMBRIC neto"],["comision_imbric","O","Com. IMBRIC"],
+  ["total_abonados_neto","P","Abonados neto"],["total_comisiones","Q","Comisiones"],
+  ["total_pidetaxi_sin_comisiones","R","PideTaxi neto"],["mitad","S","50 %"],["seguro","T","Seguro"],
+  ["cobro_tarjeta","U","Tarjeta"],["gasolina_lavado","V","Gasolina"],["total_jefe","W","Total jefe"],
+  ["total_jefe_seguro","X","Jefe + seguro"]
 ];
 
 export function contabilidadPeriod({month="",start="",end=""}={}){
@@ -362,8 +426,14 @@ export function contabilidadPeriod({month="",start="",end=""}={}){
   const workdays=Math.max(0,rows.length-restdays);
   const averages={};
   PERIOD_FIELDS.forEach(([key])=>averages[key]=workdays ? totals[key]/workdays : null);
+  const detailRows=rows.filter(row=>!isRest(cell(ws, `E${row}`))).map(row=>{
+    const values={};
+    DETAIL_FIELDS.forEach(([key,col])=>values[key]=numberValue(cell(ws, `${col}${row}`)));
+    return {row,date:excelDateToISO(cell(ws, `A${row}`)),day:String(cell(ws, `B${row}`)||""),values};
+  });
   return {
     label:month ? `Acumulado del mes ${String(monthNumber).padStart(2,"0")}/${monthYear}` : `Acumulado del rango ${start} a ${end}`,
-    stats:{days:rows.length,workdays,restdays},totals,averages,rows
+    stats:{days:rows.length,workdays,restdays},totals,averages,rows,detailRows,
+    detailFields:DETAIL_FIELDS.map(([key,,label])=>({key,label}))
   };
 }
