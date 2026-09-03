@@ -143,21 +143,7 @@
             <button class="btn primary" id="saveWriteWebhook">Guardar URL de guardado</button>
             <button class="btn ghost" id="clearWriteWebhook">Olvidar URL de guardado</button>
           </div>
-          <small class="muted">Esta segunda URL solo se usará para guardar los ocho importes manuales del día.</small>
-          <hr>
-          <label class="cloud-input-label">
-            <span>URL privada para guardar Ingreso</span>
-            <input id="makeIncomeWriteWebhookUrl" class="cloud-url-input" type="password" autocomplete="off" placeholder="https://hook.eu1.make.com/...">
-          </label>
-          <div class="actions"><button class="btn primary" id="saveIncomeWriteWebhook">Guardar URL de Ingreso</button><button class="btn ghost" id="clearIncomeWriteWebhook">Olvidar URL de Ingreso</button></div>
-          <small class="muted">Opcional: si no la rellenas, Ingreso usa la URL general de guardado anterior.</small>
-          <hr>
-          <label class="cloud-input-label">
-            <span>URL privada para guardar Ahorro</span>
-            <input id="makeSavingWriteWebhookUrl" class="cloud-url-input" type="password" autocomplete="off" placeholder="https://hook.eu1.make.com/...">
-          </label>
-          <div class="actions"><button class="btn primary" id="saveSavingWriteWebhook">Guardar URL de Ahorro</button><button class="btn ghost" id="clearSavingWriteWebhook">Olvidar URL de Ahorro</button></div>
-          <small class="muted">Opcional: si no la rellenas, Ahorro usa la URL general y conserva su fórmula de ingreso.</small>
+          <small class="muted">Una única URL guarda Contabilidad, Ingreso y Ahorro. Solo escribe las celdas editables y respeta las fórmulas del libro.</small>
         </div>
 
         <div class="card cloud-card">
@@ -171,8 +157,6 @@
             <span>Guardado en OneDrive</span>
             <strong id="makeWriteState">Pendiente de configurar</strong>
           </div>
-          <div class="file-state"><span>Guardado de Ingreso</span><strong id="makeIncomeWriteState">Pendiente de configurar</strong></div>
-          <div class="file-state"><span>Guardado de Ahorro</span><strong id="makeSavingWriteState">Pendiente de configurar</strong></div>
           <div class="file-state">
             <span>Excel recibido</span>
             <strong id="workbookName">No cargado</strong>
@@ -195,6 +179,6 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="./js/app.js?v=20260903d"></script>
+  <script type="module" src="./js/app.js?v=20260904b"></script>
 </body>
 </html>

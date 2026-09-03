@@ -66,7 +66,12 @@ export const clearSavingWriteWebhookUrl=savingWriteUrl.clear;
 
 async function postWrite(url, action, payload, missingMessage){
   if(!url) throw new Error(missingMessage);
-  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...payload})});
+  // Un formulario URL codificado es una "solicitud simple" del navegador: evita
+  // el OPTIONS previo que Make interpretaba como un guardado vacío. `cuerpo`
+  // conserva el JSON que Microsoft Graph necesita para actualizar el rango.
+  const body=new URLSearchParams();
+  Object.entries({action,...payload}).forEach(([key,value])=>body.set(key, value==null ? "" : String(value)));
+  const response=await fetch(url,{method:"POST",body});
   const body=(await response.text()).trim();
   if(!response.ok) throw new Error(body || `Make respondió con error ${response.status}.`);
   if(/^error\b/i.test(body)) throw new Error(body);
