@@ -2,7 +2,7 @@ import { euro, num } from "./calculos.js?v=20260903a";
 import {
   getWorkbook, findIngresoDate, loadAhorroRow, findAhorroDate,
   nextFreeAhorroRow, contabilidadPeriod
-} from "./cloud-data.js?v=20260904b";
+} from "./cloud-data.js?v=20260904c";
 
 const $=id=>document.getElementById(id);
 const INCOME_INPUTS=[["b100","100 €",100],["b50","50 €",50],["b20","20 €",20],["b10","10 €",10],["b5","5 €",5]];
