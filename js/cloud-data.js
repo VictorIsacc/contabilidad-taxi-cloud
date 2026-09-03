@@ -1,5 +1,7 @@
 const WEBHOOK_KEY = "taxiMakeWebhookUrl";
 const WRITE_WEBHOOK_KEY = "taxiMakeWriteWebhookUrl";
+const INCOME_WRITE_WEBHOOK_KEY = "taxiMakeIncomeWriteWebhookUrl";
+const SAVING_WRITE_WEBHOOK_KEY = "taxiMakeSavingWriteWebhookUrl";
 let workbook = null;
 let workbookBytes = null;
 
@@ -42,18 +44,65 @@ export function clearWriteWebhookUrl(){
   localStorage.removeItem(WRITE_WEBHOOK_KEY);
 }
 
-export async function saveContabilidadValues(payload){
-  const url = getWriteWebhookUrl();
-  if(!url) throw new Error("Primero guarda la URL del webhook de guardado de Make.");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({action:"guardar_contabilidad", ...payload})
-  });
-  const body = (await response.text()).trim();
+function makeWriteUrlStore(key){
+  return {
+    get:()=>localStorage.getItem(key) || "",
+    save:url=>{
+      const clean=validateMakeWebhook(url);
+      localStorage.setItem(key,clean);
+      return clean;
+    },
+    clear:()=>localStorage.removeItem(key)
+  };
+}
+const incomeWriteUrl=makeWriteUrlStore(INCOME_WRITE_WEBHOOK_KEY);
+const savingWriteUrl=makeWriteUrlStore(SAVING_WRITE_WEBHOOK_KEY);
+export const getIncomeWriteWebhookUrl=incomeWriteUrl.get;
+export const saveIncomeWriteWebhookUrl=incomeWriteUrl.save;
+export const clearIncomeWriteWebhookUrl=incomeWriteUrl.clear;
+export const getSavingWriteWebhookUrl=savingWriteUrl.get;
+export const saveSavingWriteWebhookUrl=savingWriteUrl.save;
+export const clearSavingWriteWebhookUrl=savingWriteUrl.clear;
+
+async function postWrite(url, action, payload, missingMessage){
+  if(!url) throw new Error(missingMessage);
+  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...payload})});
+  const body=(await response.text()).trim();
   if(!response.ok) throw new Error(body || `Make respondió con error ${response.status}.`);
   if(/^error\b/i.test(body)) throw new Error(body);
   return body;
+}
+
+export async function saveContabilidadValues(payload){
+  const v=payload.valores;
+  return postWrite(getWriteWebhookUrl(),"guardar_contabilidad",{
+    ...payload,
+    hoja:"Contabilidad",
+    rango:`F${payload.fila}:V${payload.fila}`,
+    cuerpo:JSON.stringify({values:[[v.cierre_pidetaxi,v.abonados_sin_comision,v.uber,v.ubercash,v.joinup_bruto,null,null,v.imbric_bruto,null,null,null,null,null,null,null,v.cobro_tarjeta,v.gasolina_lavado]]})
+  },"Primero guarda la URL de guardado de Contabilidad en Make.");
+}
+
+export async function saveIngresoValues(payload){
+  const v=payload.valores;
+  return postWrite(getIncomeWriteWebhookUrl() || getWriteWebhookUrl(),"guardar_ingreso",{
+    ...payload,
+    hoja:"Ingreso",
+    rango:`C${payload.fila}:G${payload.fila}`,
+    cuerpo:JSON.stringify({values:[[v.b100,v.b50,v.b20,v.b10,v.b5]]})
+  },"Primero guarda la URL de guardado de Contabilidad en Make.");
+}
+
+export async function saveAhorroValues(payload){
+  const v=payload.valores;
+  const [year,month,day]=String(payload.fecha).split("-").map(Number);
+  const serial=Math.round((Date.UTC(year,month-1,day)-Date.UTC(1899,11,30))/86400000);
+  return postWrite(getSavingWriteWebhookUrl() || getWriteWebhookUrl(),"guardar_ahorro",{
+    ...payload,
+    hoja:"Ahorro",
+    rango:`A${payload.fila}:I${payload.fila}`,
+    cuerpo:JSON.stringify({values:[[serial,v.b100,v.b50,v.b20,v.b10,v.b5,null,v.gasto,v.detalle]]})
+  },"Primero guarda la URL de guardado de Contabilidad en Make.");
 }
 
 export async function fetchWorkbook(){

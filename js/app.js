@@ -3,9 +3,11 @@ import { saveLocalDay, loadLocalDay, markLocalRest } from "./storage.js?v=202609
 import {
   getWebhookUrl, getWorkbook, saveWebhookUrl, clearWebhookUrl, fetchWorkbook,
   workbookSummary, findContabilidadDate, nextPendingContabilidad,
-  getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues
-} from "./cloud-data.js?v=20260903b";
-import { initLegacyTabs } from "./legacy-tabs.js?v=20260903a";
+  getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
+  getIncomeWriteWebhookUrl, saveIncomeWriteWebhookUrl, clearIncomeWriteWebhookUrl, saveIngresoValues,
+  getSavingWriteWebhookUrl, saveSavingWriteWebhookUrl, clearSavingWriteWebhookUrl, saveAhorroValues
+} from "./cloud-data.js?v=20260903d";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260903c";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
@@ -41,8 +43,12 @@ function setCloudStatus(){
   const writeUrl=getWriteWebhookUrl();
   if($("makeWebhookUrl")) $("makeWebhookUrl").value=url;
   if($("makeWriteWebhookUrl")) $("makeWriteWebhookUrl").value=writeUrl;
+  if($("makeIncomeWriteWebhookUrl")) $("makeIncomeWriteWebhookUrl").value=getIncomeWriteWebhookUrl();
+  if($("makeSavingWriteWebhookUrl")) $("makeSavingWriteWebhookUrl").value=getSavingWriteWebhookUrl();
   if($("makeState")) $("makeState").textContent=url?"Configurada en este dispositivo":"Sin configurar";
-  if($("makeWriteState")) $("makeWriteState").textContent=writeUrl?"Preparado para guardar":"Pendiente de configurar";
+  if($("makeWriteState")) $("makeWriteState").textContent=writeUrl?"Contabilidad preparada":"Pendiente de configurar";
+  if($("makeIncomeWriteState")) $("makeIncomeWriteState").textContent=getIncomeWriteWebhookUrl()?"Ingreso preparado":"Pendiente de configurar";
+  if($("makeSavingWriteState")) $("makeSavingWriteState").textContent=getSavingWriteWebhookUrl()?"Ahorro preparado":"Pendiente de configurar";
   $("cloudDot")?.classList.toggle("online",!!url);
   if($("accountText")) $("accountText").textContent=url?(writeUrl?"Lectura y guardado configurados":"Make + OneDrive configurado"):"Nube sin configurar";
 }
@@ -82,7 +88,9 @@ $("workDate").value=isoToday();
 const legacyTabs=initLegacyTabs({
   ensureWorkbook:loadCloudWorkbook,
   toast,
-  getDate:()=>$("workDate").value
+  getDate:()=>$("workDate").value,
+  saveIngreso:saveIngresoValues,
+  saveAhorro:saveAhorroValues
 });
 
 function changeWorkDate(days){
@@ -209,6 +217,10 @@ $("clearWriteWebhook")?.addEventListener("click",()=>{
   clearWriteWebhookUrl(); setCloudStatus(); $("makeWriteWebhookUrl").value="";
   toast("URL de guardado eliminada de este dispositivo");
 });
+$("saveIncomeWriteWebhook")?.addEventListener("click",()=>{try{saveIncomeWriteWebhookUrl($("makeIncomeWriteWebhookUrl").value);setCloudStatus();toast("URL de guardado de Ingreso guardada");}catch(e){toast(e.message);}});
+$("clearIncomeWriteWebhook")?.addEventListener("click",()=>{clearIncomeWriteWebhookUrl();setCloudStatus();$("makeIncomeWriteWebhookUrl").value="";toast("URL de guardado de Ingreso eliminada");});
+$("saveSavingWriteWebhook")?.addEventListener("click",()=>{try{saveSavingWriteWebhookUrl($("makeSavingWriteWebhookUrl").value);setCloudStatus();toast("URL de guardado de Ahorro guardada");}catch(e){toast(e.message);}});
+$("clearSavingWriteWebhook")?.addEventListener("click",()=>{clearSavingWriteWebhookUrl();setCloudStatus();$("makeSavingWriteWebhookUrl").value="";toast("URL de guardado de Ahorro eliminada");});
 $("testCloud")?.addEventListener("click",()=>loadCloudWorkbook(true));
 
 setCloudStatus();

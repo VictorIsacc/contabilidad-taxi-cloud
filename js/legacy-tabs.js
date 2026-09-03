@@ -1,8 +1,8 @@
-import { euro, num } from "./calculos.js?v=20260902c";
+import { euro, num } from "./calculos.js?v=20260903a";
 import {
   getWorkbook, findIngresoDate, loadAhorroRow, findAhorroDate,
   nextFreeAhorroRow, contabilidadPeriod
-} from "./cloud-data.js?v=20260902c";
+} from "./cloud-data.js?v=20260903d";
 
 const $=id=>document.getElementById(id);
 const INCOME_INPUTS=[["b100","100 €",100],["b50","50 €",50],["b20","20 €",20],["b10","10 €",10],["b5","5 €",5]];
@@ -40,8 +40,8 @@ function incomeHtml(){
     <div class="card feature-card income-card">
       <div class="card-head"><div><span class="eyebrow">EFECTIVO</span><h2>Ingreso del día</h2></div><span class="row-pill">Fila <b id="ingresoRow">—</b></span></div>
       <div class="bill-grid" id="ingresoInputs">${INCOME_INPUTS.map(([key,label])=>`<label><span>${label}</span><input data-income="${key}" inputmode="numeric" placeholder="0"></label>`).join("")}</div>
-      <div class="actions"><button class="btn primary" id="loadIngreso">Cargar desde Excel</button><button class="btn" id="loadIngresoDraft">Recuperar borrador</button><button class="btn" id="saveIngresoDraft">Guardar borrador local</button></div>
-      <p class="notice">La lectura ya usa la hoja Ingreso real. El borrador no modifica todavía el Excel de OneDrive.</p>
+      <div class="actions"><button class="btn primary" id="loadIngreso">Cargar desde Excel</button><button class="btn primary" id="saveIngresoCloud">Guardar en OneDrive</button><button class="btn" id="loadIngresoDraft">Recuperar borrador</button><button class="btn" id="saveIngresoDraft">Guardar borrador local</button></div>
+      <p class="notice">Guardar en OneDrive escribe únicamente los cinco recuentos editables de la fila mostrada.</p>
     </div>
     <div class="card feature-card">
       <div class="card-head"><div><span class="eyebrow">RESULTADOS</span><h2>Resultado del ingreso</h2></div></div>
@@ -65,8 +65,8 @@ function savingHtml(){
       <div class="inline-tools"><input id="ahorroSearchDate" class="mini-input" placeholder="dd/mm/aaaa"><button class="btn" id="findAhorro">Buscar fecha</button><button class="btn" id="freeAhorro">Siguiente libre</button></div>
       <div class="saving-grid" id="ahorroInputs">${SAVING_INPUTS.map(([key,label])=>`<label><span>${label}</span><input data-saving="${key}" ${key==="date"?'placeholder="dd/mm/aaaa"':'inputmode="decimal"'}></label>`).join("")}</div>
       <div class="single-result"><span>Ingreso calculado</span><strong id="ahorroIngreso">0,00 €</strong></div>
-      <div class="actions"><button class="btn primary" id="loadAhorro">Cargar fila</button><button class="btn" id="loadAhorroDraft">Recuperar borrador</button><button class="btn" id="saveAhorroDraft">Guardar borrador local</button></div>
-      <p class="notice">La lectura y búsqueda usan la hoja Ahorro real. El borrador permanece en este dispositivo.</p>
+      <div class="actions"><button class="btn primary" id="loadAhorro">Cargar fila</button><button class="btn primary" id="saveAhorroCloud">Guardar en OneDrive</button><button class="btn" id="loadAhorroDraft">Recuperar borrador</button><button class="btn" id="saveAhorroDraft">Guardar borrador local</button></div>
+      <p class="notice">Guardar en OneDrive conserva la fórmula de Ingreso y escribe solo fecha, recuentos, gasto y detalle.</p>
     </div>
     <div class="card feature-card">
       <div class="card-head"><div><span class="eyebrow">RESUMEN</span><h2>Ahorro</h2></div></div>
@@ -105,7 +105,7 @@ function renderIncomeMonth(target,data){
   $(target).innerHTML=CASH_MONTH.map(([key,label])=>miniRow(label,data?.[key],key==="mes_total_efectivo")).join("");
 }
 
-export function initLegacyTabs({ensureWorkbook,toast,getDate}){
+export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAhorro}){
   $("tab-ingreso").innerHTML=incomeHtml();
   $("tab-ahorro").innerHTML=savingHtml();
   $("tab-analisis").innerHTML=analysisHtml();
@@ -142,6 +142,16 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate}){
   $("saveIngresoDraft").onclick=()=>{
     const data={}; document.querySelectorAll("[data-income]").forEach(i=>data[i.dataset.income]=i.value);
     localStorage.setItem(`taxiIngresoDraft:${getDate()}`,JSON.stringify(data)); toast("Borrador de Ingreso guardado en este dispositivo");
+  };
+  $("saveIngresoCloud").onclick=async()=>{
+    if(!saveIngreso){toast("El guardado de Ingreso todavía no está configurado.");return;}
+    if(!getWorkbook() && !(await ensureWorkbook(false))) return;
+    const result=findIngresoDate(getDate());
+    if(!result){toast("No existe una fila para esta fecha en la hoja Ingreso.");return;}
+    const values={};
+    document.querySelectorAll("[data-income]").forEach(i=>values[i.dataset.income]=num(i.value));
+    try{await saveIngreso({fila:result.row,fecha:getDate(),valores:values});toast(`Ingreso guardado en OneDrive · fila ${result.row}`);}
+    catch(error){toast(`No se ha guardado Ingreso: ${error.message}`);}
   };
   document.querySelectorAll("[data-income]").forEach(input=>input.addEventListener("input",()=>{
     const total=INCOME_INPUTS.reduce((sum,[key,,denom])=>sum+num(document.querySelector(`[data-income="${key}"]`).value)*denom,0);
@@ -185,6 +195,18 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate}){
   $("saveAhorroDraft").onclick=()=>{
     const data={row:$("ahorroRow").value};document.querySelectorAll("[data-saving]").forEach(i=>data[i.dataset.saving]=i.value);
     localStorage.setItem(`taxiAhorroDraft:${data.row}`,JSON.stringify(data));toast("Borrador de Ahorro guardado en este dispositivo");
+  };
+  $("saveAhorroCloud").onclick=async()=>{
+    if(!saveAhorro){toast("El guardado de Ahorro todavía no está configurado.");return;}
+    if(!getWorkbook() && !(await ensureWorkbook(false))) return;
+    const row=Number($("ahorroRow").value);
+    if(!Number.isInteger(row)||row<2||row>16){toast("La fila de Ahorro debe estar entre la 2 y la 16.");return;}
+    const values={}; document.querySelectorAll("[data-saving]").forEach(i=>values[i.dataset.saving]=i.value.trim());
+    const iso=displayToIso(values.date);
+    if(!iso){toast("Fecha no válida. Usa dd/mm/aaaa.");return;}
+    ["b100","b50","b20","b10","b5"].forEach(key=>values[key]=num(values[key]));
+    try{await saveAhorro({fila:row,fecha:iso,valores});toast(`Ahorro guardado en OneDrive · fila ${row}`);}
+    catch(error){toast(`No se ha guardado Ahorro: ${error.message}`);}
   };
   $("loadAhorroDraft").onclick=()=>{
     const row=$("ahorroRow").value;
