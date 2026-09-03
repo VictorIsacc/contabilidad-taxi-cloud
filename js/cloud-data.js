@@ -72,10 +72,10 @@ async function postWrite(url, action, payload, missingMessage){
   const body=new URLSearchParams();
   Object.entries({action,...payload}).forEach(([key,value])=>body.set(key, value==null ? "" : String(value)));
   const response=await fetch(url,{method:"POST",body});
-  const body=(await response.text()).trim();
-  if(!response.ok) throw new Error(body || `Make respondió con error ${response.status}.`);
-  if(/^error\b/i.test(body)) throw new Error(body);
-  return body;
+  const responseBody=(await response.text()).trim();
+  if(!response.ok) throw new Error(responseBody || `Make respondió con error ${response.status}.`);
+  if(/^error\b/i.test(responseBody)) throw new Error(responseBody);
+  return responseBody;
 }
 
 export async function saveContabilidadValues(payload){
