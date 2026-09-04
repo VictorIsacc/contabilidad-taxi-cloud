@@ -6,10 +6,16 @@ import {
   getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
   saveIngresoValues, saveAhorroValues
 } from "./cloud-data.js?v=20260904c";
-import { initLegacyTabs } from "./legacy-tabs.js?v=20260904c";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260904g";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
+const CONTA_RESULT_FIELDS=[
+  ["suma_total","Suma total"],["joinup_neto","JOIN UP neto"],["comision_joinup","Comisión JOIN UP"],
+  ["imbric_neto","IMBRIC neto"],["comision_imbric","Comisión IMBRIC"],["total_abonados_neto","Total abonados neto"],
+  ["total_comisiones","Total comisiones"],["total_pidetaxi_sin_comisiones","Total PideTaxi sin comisiones"],
+  ["mitad","50%"],["seguro","Seguro"],["total_jefe","Total jefe"],["total_jefe_seguro","Total jefe 50% + seguro"],["me_queda","Me queda"]
+];
 
 function toast(msg){
   const el=$("toast"); el.textContent=msg; el.classList.add("show");
@@ -19,11 +25,18 @@ function isoToday(){
   const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
   return d.toISOString().slice(0,10);
 }
+function renderWorkDate(){
+  const value=$("workDate")?.value;
+  if(!value || !$("workDateText")) return;
+  const date=new Date(`${value}T12:00:00`);
+  $("workDateText").textContent=new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(date);
+}
 function collectConta(){
   const o={}; qsa("[data-field]").forEach(i=>o[i.dataset.field]=i.value); return o;
 }
 function fillConta(data={}){
   qsa("[data-field]").forEach(i=>i.value=data[i.dataset.field]??"");
+  if($("contaRow")) $("contaRow").textContent=data.row??"—";
   updateCalc(data);
 }
 function updateCalc(source=null){
@@ -33,9 +46,17 @@ function updateCalc(source=null){
     ? source[key]
     : r[key];
   $("rSuma").textContent = euro(value("suma_total"));
-  $("rMitad").textContent = euro(value("mitad"));
-  $("rComisiones").textContent = euro(value("total_comisiones"));
+  if($("rMitad")) $("rMitad").textContent = euro(value("mitad"));
+  if($("rComisiones")) $("rComisiones").textContent = euro(value("total_comisiones"));
   $("rJefe").textContent = euro(value("total_jefe"));
+  $("rMeQueda").textContent = euro(value("me_queda"));
+  const table=$("contaResultTable");
+  if(table){
+    table.innerHTML=CONTA_RESULT_FIELDS.map(([key,label])=>{
+      const amount=value(key), negative=num(amount)<0?" negative":"";
+      return `<div class="legacy-row"><span>${label}</span><strong class="${negative.trim()}">${euro(amount)}</strong></div>`;
+    }).join("");
+  }
 }
 function setCloudStatus(){
   const url=getWebhookUrl();
@@ -59,27 +80,29 @@ function renderSheets(list){
   box.innerHTML=list.map(x=>`<div><strong>${x.name}</strong><span>${x.rows} filas · ${x.cols} columnas</span></div>`).join("");
 }
 async function loadCloudWorkbook(showToast=true){
-  $("globalStatus").textContent="Conectando con OneDrive…";
-  $("globalStatusDetail").textContent="Make está recuperando el Excel.";
+  if($("globalStatus")) $("globalStatus").textContent="Conectando con OneDrive…";
+  if($("globalStatusDetail")) $("globalStatusDetail").textContent="Make está recuperando el Excel.";
   try{
     await fetchWorkbook();
     const list=workbookSummary()||[];
     $("workbookName").textContent="164_CONTA CALEN TAXI 164.xlsx";
     $("sheetCount").textContent=String(list.length);
     renderSheets(list);
-    $("globalStatus").textContent="Excel conectado";
-    $("globalStatusDetail").textContent="El libro de OneDrive está disponible en esta sesión.";
+    if($("globalStatus")) $("globalStatus").textContent="Excel conectado";
+    if($("globalStatusDetail")) $("globalStatusDetail").textContent="El libro de OneDrive está disponible en esta sesión.";
     if(showToast) toast("Excel cargado correctamente desde OneDrive");
     return true;
   }catch(e){
-    $("globalStatus").textContent="No se pudo cargar el Excel";
-    $("globalStatusDetail").textContent=e.message;
+    if($("globalStatus")) $("globalStatus").textContent="No se pudo cargar el Excel";
+    if($("globalStatusDetail")) $("globalStatusDetail").textContent=e.message;
     if(showToast) toast(e.message);
     return false;
   }
 }
 
 $("workDate").value=isoToday();
+renderWorkDate();
+$("workDate").addEventListener("change",renderWorkDate);
 const legacyTabs=initLegacyTabs({
   ensureWorkbook:loadCloudWorkbook,
   toast,
@@ -93,16 +116,13 @@ function changeWorkDate(days){
   if(Number.isNaN(date.getTime())) return;
   date.setDate(date.getDate()+days);
   input.value=date.toISOString().slice(0,10);
+  renderWorkDate();
 }
 function addDailyControls(){
-  const host=document.querySelector("#tab-contabilidad .card");
-  if(!host || $("dailyControls")) return;
-  const controls=document.createElement("div");
-  controls.id="dailyControls";
-  controls.className="daily-controls";
-  controls.innerHTML=`<button class="btn" id="todayDate">● Hoy</button><button class="btn" id="previousDate">‹ Día</button><button class="btn" id="nextDate">Día ›</button><button class="btn" id="loadCurrentDay">↻ Cargar día</button><button class="btn primary" id="loadBundle">⇄ Contabilidad + Ingreso</button><button class="btn accent" id="nextPending">⚑ Siguiente pendiente</button>`;
-  host.querySelector(".card-head")?.after(controls);
-  $("todayDate").onclick=()=>{$("workDate").value=isoToday();toast("Fecha de hoy seleccionada");};
+  const host=$("dailyControls");
+  if(!host || host.childElementCount) return;
+  host.innerHTML=`<button class="btn" id="todayDate">● Hoy</button><button class="btn" id="previousDate">‹ Día</button><button class="btn" id="nextDate">Día ›</button><button class="btn" id="loadCurrentDay">↻ Cargar día</button><button class="btn primary" id="loadBundle">⇄ Contabilidad + Ingreso</button><button class="btn accent" id="nextPending">⚑ Siguiente pendiente</button>`;
+  $("todayDate").onclick=()=>{$("workDate").value=isoToday();renderWorkDate();toast("Fecha de hoy seleccionada");};
   $("previousDate").onclick=()=>changeWorkDate(-1);
   $("nextDate").onclick=()=>changeWorkDate(1);
   $("loadCurrentDay").onclick=()=>$("loadDay").click();
@@ -112,7 +132,7 @@ function addDailyControls(){
     if(!getWorkbook() && !await loadCloudWorkbook(false)) return;
     const pending=nextPendingContabilidad($("workDate").value);
     if(!pending){toast("No hay días pendientes a partir de la fecha seleccionada.");return;}
-    $("workDate").value=pending.date;
+    $("workDate").value=pending.date; renderWorkDate();
     toast(`Siguiente pendiente: ${pending.date} · fila ${pending.row}`);
   };
 }
@@ -144,6 +164,7 @@ $("saveDay").addEventListener("click",async()=>{
       if(loaded) row=findContabilidadDate(date);
     }
     if(!row) throw new Error("No existe una fila para esta fecha en la hoja Contabilidad.");
+    if($("contaRow")) $("contaRow").textContent=row.row;
     await saveContabilidadValues({
       fecha:date,
       fila:row.row,
@@ -186,7 +207,7 @@ $("loadDay").addEventListener("click",async()=>{
   fillConta(d);toast("Día cargado del modo local");
 });
 
-$("markRest").addEventListener("click",()=>{
+$("markRest")?.addEventListener("click",()=>{
   markLocalRest($("workDate").value); fillConta({}); toast("Descanso guardado en modo local de prueba");
 });
 

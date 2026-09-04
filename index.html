@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/favicon.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./css/estilos.css?v=20260902">
+  <link rel="stylesheet" href="./css/estilos.css?v=20260904g">
 </head>
 <body>
   <header class="topbar">
@@ -32,17 +32,13 @@
   </header>
 
   <main class="app-shell">
-    <section class="hero-card">
-      <div>
-        <span class="eyebrow">CONTABILIDAD TAXI CLOUD</span>
-        <h1>La misma contabilidad, desde móvil o PC</h1>
-        <p>La aplicación será instalable desde GitHub Pages y trabajará con tu libro Excel alojado en OneDrive.</p>
+    <section class="workday-bar" aria-label="Fecha de trabajo">
+      <div class="workday-heading">
+        <span class="eyebrow">FECHA DE TRABAJO</span>
+        <input id="workDate" class="date-input" type="date" aria-label="Fecha de trabajo">
+        <span id="workDateText" class="workday-text"></span>
       </div>
-      <div class="hero-status">
-        <span class="status-label">Estado</span>
-        <strong id="globalStatus">Base web preparada</strong>
-        <small id="globalStatusDetail">Pendiente de registrar el acceso Microsoft.</small>
-      </div>
+      <div id="dailyControls" class="daily-controls" aria-label="Controles diarios"></div>
     </section>
 
     <nav class="tabs">
@@ -54,16 +50,13 @@
     </nav>
 
     <section class="tabpage active" id="tab-contabilidad">
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <span class="eyebrow">DÍA DE TRABAJO</span>
-            <h2>Contabilidad</h2>
+      <div class="conta-layout">
+        <div class="card conta-entry-card">
+          <div class="card-head">
+            <div><span class="eyebrow">ENTRADA</span><h2>Contabilidad diaria</h2></div>
+            <span class="row-pill">Fila <b id="contaRow">—</b></span>
           </div>
-          <input id="workDate" class="date-input" type="date">
-        </div>
-
-        <div class="input-grid">
+          <div class="input-grid conta-input-grid">
           <label><span>Cierre PideTaxi</span><input inputmode="decimal" data-field="cierre_pidetaxi" placeholder="0,00"></label>
           <label><span>Abonados sin comisión</span><input inputmode="decimal" data-field="abonados_sin_comision" placeholder="0,00"></label>
           <label><span>Uber</span><input inputmode="decimal" data-field="uber" placeholder="0,00"></label>
@@ -72,21 +65,25 @@
           <label><span>IMBRIC en bruto</span><input inputmode="decimal" data-field="imbric_bruto" placeholder="0,00"></label>
           <label><span>Cobro tarjeta</span><input inputmode="decimal" data-field="cobro_tarjeta" placeholder="0,00"></label>
           <label><span>Lavado / Gasolina</span><input inputmode="decimal" data-field="gasolina_lavado" placeholder="0,00"></label>
+          </div>
+          <div class="actions"><button class="btn save-conta" id="saveDay">✓ Guardar Contabilidad</button><button class="btn" id="loadDay">↗ Abrir Excel en fila</button></div>
         </div>
 
-        <div class="results-grid">
-          <div><span>Suma total</span><strong id="rSuma">0,00 €</strong></div>
-          <div><span>Total comisiones</span><strong id="rComisiones">—</strong></div>
-          <div><span>50%</span><strong id="rMitad">—</strong></div>
-          <div class="accent"><span>Total jefe</span><strong id="rJefe">—</strong></div>
+        <div class="card conta-results-card">
+          <div class="card-head"><div><span class="eyebrow">RESULTADOS</span><h2>Resultado del día</h2></div><span class="live-badge">EN VIVO</span></div>
+          <div class="conta-kpis">
+            <div class="kpi total"><span>Suma total</span><strong id="rSuma">0,00 €</strong></div>
+            <div class="kpi remains"><span>Me queda</span><strong id="rMeQueda">0,00 €</strong></div>
+            <div class="kpi chief"><span>Total jefe</span><strong id="rJefe">0,00 €</strong></div>
+          </div>
+          <div class="legacy-table conta-result-table" id="contaResultTable"></div>
+          <div class="conta-previous">
+            <div><span>Fila anterior</span><strong id="contaPreviousRow">—</strong></div>
+            <div><span>Fecha</span><strong id="contaPreviousDate">—</strong></div>
+            <div><span>Suma total</span><strong id="contaPreviousTotal">—</strong></div>
+            <div><span>Me queda</span><strong id="contaPreviousRemain">—</strong></div>
+          </div>
         </div>
-
-        <div class="actions">
-          <button class="btn primary" id="saveDay">Guardar día</button>
-          <button class="btn" id="loadDay">Cargar día</button>
-          <button class="btn ghost" id="markRest">Marcar descanso</button>
-        </div>
-        <p class="notice">En esta versión base los datos se guardan temporalmente en el navegador. Al conectar Microsoft, este almacenamiento se sustituirá por el Excel de OneDrive.</p>
       </div>
     </section>
 
@@ -179,6 +176,6 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="./js/app.js?v=20260904c"></script>
+  <script type="module" src="./js/app.js?v=20260904g"></script>
 </body>
 </html>

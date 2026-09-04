@@ -33,6 +33,15 @@ const count=value=>{
   return String(Math.round(num(value)));
 };
 const resultRow=(label,value)=>`<div class="legacy-row"><span>${label}</span><strong class="${num(value)<0?"negative":""}">${typeof value==="string"&&value.trim().toLowerCase()==="descanso"?"Descanso":euro(value)}</strong></div>`;
+const periodTone=label=>({
+  "Suma total":"period-total",
+  "Cierre PideTaxi":"period-pidetaxi",
+  "Uber":"period-uber",
+  "Cobro tarjeta":"period-card",
+  "Total jefe":"period-chief",
+  "Me queda":"period-remains"
+})[label]||"";
+const periodRow=(label,value)=>`<div class="legacy-row ${periodTone(label)}"><span>${label}</span><strong class="${num(value)<0?"negative":""}">${euro(value)}</strong></div>`;
 const miniRow=(label,value,money=false)=>`<div class="legacy-row"><span>${label}</span><strong>${money?euro(value):count(value)}</strong></div>`;
 
 function incomeHtml(){
@@ -236,8 +245,8 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
     currentPeriod=period;
     $("periodTitle").textContent=period.label;
     $("statDays").textContent=period.stats.days;$("statWork").textContent=period.stats.workdays;$("statRest").textContent=period.stats.restdays;
-    $("monthTotals").innerHTML=PERIOD_FIELDS.map(([key,label])=>resultRow(label,period.totals[key])).join("");
-    $("monthAverages").innerHTML=PERIOD_FIELDS.map(([key,label])=>resultRow(label,period.averages[key]??0)).join("");
+    $("monthTotals").innerHTML=PERIOD_FIELDS.map(([key,label])=>periodRow(label,period.totals[key])).join("");
+    $("monthAverages").innerHTML=PERIOD_FIELDS.map(([key,label])=>periodRow(label,period.averages[key]??0)).join("");
     chiefTotal=num(period.totals.mes_total_jefe);updateSettlement();
   };
   const ensureAnalysis=async()=>getWorkbook() || await ensureWorkbook(false);
