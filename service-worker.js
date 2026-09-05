@@ -1,4 +1,4 @@
-const CACHE="contabilidad-taxi-cloud-v0.14";
+const CACHE="contabilidad-taxi-cloud-20260905-scroll-tabs";
 const ASSETS=[
   "./","./index.html","./css/estilos.css","./js/app.js","./js/config.js",
   "./js/auth.js","./js/onedrive.js","./js/calculos.js","./js/storage.js","./js/cloud-data.js","./js/legacy-tabs.js",
