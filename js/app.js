@@ -10,6 +10,7 @@ import { initLegacyTabs } from "./legacy-tabs.js?v=20260904g";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
+let currentContaSeguro=0;
 const CONTA_RESULT_FIELDS=[
   ["suma_total","Suma total"],["joinup_neto","JOIN UP neto"],["comision_joinup","Comisión JOIN UP"],
   ["imbric_neto","IMBRIC neto"],["comision_imbric","Comisión IMBRIC"],["total_abonados_neto","Total abonados neto"],
@@ -32,12 +33,25 @@ function renderWorkDate(){
   $("workDateText").textContent=new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(date);
 }
 function collectConta(){
-  const o={}; qsa("[data-field]").forEach(i=>o[i.dataset.field]=i.value); return o;
+  const o={seguro:currentContaSeguro};
+  qsa("[data-field]").forEach(i=>o[i.dataset.field]=i.value);
+  return o;
 }
 function fillConta(data={}){
   qsa("[data-field]").forEach(i=>i.value=data[i.dataset.field]??"");
+  currentContaSeguro=num(data.seguro);
   if($("contaRow")) $("contaRow").textContent=data.row??"—";
   updateCalc(data);
+}
+function syncSeguroForWorkDate(){
+  try{
+    const row=getWorkbook() ? findContabilidadDate($("workDate").value) : null;
+    currentContaSeguro=num(row?.seguro);
+    if($("contaRow")) $("contaRow").textContent=row?.row??"—";
+  }catch(_error){
+    currentContaSeguro=0;
+  }
+  updateCalc();
 }
 function updateCalc(source=null){
   const raw=source || collectConta();
@@ -88,6 +102,7 @@ async function loadCloudWorkbook(showToast=true){
     $("workbookName").textContent="164_CONTA CALEN TAXI 164.xlsx";
     $("sheetCount").textContent=String(list.length);
     renderSheets(list);
+    syncSeguroForWorkDate();
     if($("globalStatus")) $("globalStatus").textContent="Excel conectado";
     if($("globalStatusDetail")) $("globalStatusDetail").textContent="El libro de OneDrive está disponible en esta sesión.";
     if(showToast) toast("Excel cargado correctamente desde OneDrive");
@@ -102,7 +117,7 @@ async function loadCloudWorkbook(showToast=true){
 
 $("workDate").value=isoToday();
 renderWorkDate();
-$("workDate").addEventListener("change",renderWorkDate);
+$("workDate").addEventListener("change",()=>{renderWorkDate();syncSeguroForWorkDate();});
 const legacyTabs=initLegacyTabs({
   ensureWorkbook:loadCloudWorkbook,
   toast,
