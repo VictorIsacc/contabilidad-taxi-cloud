@@ -119,7 +119,32 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
   $("tab-ahorro").innerHTML=savingHtml();
   $("tab-analisis").innerHTML=analysisHtml();
 
+  let loadedIncome=null;
+  const incomeValues=()=>Object.fromEntries([...document.querySelectorAll("[data-income]")].map(input=>[input.dataset.income,num(input.value)]));
+  const incomeTotal=values=>INCOME_INPUTS.reduce((sum,[key,,denom])=>sum+num(values[key])*denom,0);
+  const renderIncomeOutputs=values=>{
+    const total=incomeTotal(values);
+    const output={total,gasto:0,ingresos:total,me_queda:0,a_deber:-total};
+    $("ingresoOutputs").innerHTML=INCOME_OUTPUTS.map(([key,label])=>resultRow(label,output[key])).join("");
+  };
+  const renderIncomePreview=()=>{
+    if(!loadedIncome) return;
+    renderIncomeOutputs(incomeValues());
+    const keys=["b100","b50","b20","b10","b5"];
+    const month={...loadedIncome.month.month};
+    const current=incomeValues();
+    keys.forEach(key=>{
+      const monthKey=`mes_${key}`;
+      month[monthKey]=num(month[monthKey])-num(loadedIncome.inputs[key])+num(current[key]);
+    });
+    month.mes_total_efectivo=incomeTotal({b100:month.mes_b100,b50:month.mes_b50,b20:month.mes_b20,b10:month.mes_b10,b5:month.mes_b5});
+    const combined={...loadedIncome.month.remainder};
+    Object.keys(month).forEach(key=>combined[key]=num(month[key])+num(loadedIncome.month.remainder[key]));
+    renderIncomeMonth("incomeMonth",month);
+    renderIncomeMonth("incomeCombined",combined);
+  };
   const fillIncome=result=>{
+    loadedIncome=result;
     $("ingresoRow").textContent=result.row;
     document.querySelectorAll("[data-income]").forEach(input=>input.value=result.inputs[input.dataset.income]??"");
     $("ingresoOutputs").innerHTML=INCOME_OUTPUTS.map(([key,label])=>resultRow(label,result.outputs[key])).join("");
@@ -159,14 +184,17 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
     if(!result){toast("No existe una fila para esta fecha en la hoja Ingreso.");return;}
     const values={};
     document.querySelectorAll("[data-income]").forEach(i=>values[i.dataset.income]=num(i.value));
-    try{await saveIngreso({fila:result.row,fecha:getDate(),valores:values});toast(`Ingreso guardado en OneDrive · fila ${result.row}`);}
+    try{
+      await saveIngreso({fila:result.row,fecha:getDate(),valores:values});
+      // Conservamos el cambio en la pantalla hasta la próxima carga del Excel,
+      // sin afirmar que las fórmulas del libro se hayan recalculado localmente.
+      loadedIncome={...result,inputs:{...values}};
+      renderIncomePreview();
+      toast(`Ingreso enviado a Make · fila ${result.row}`);
+    }
     catch(error){toast(`No se ha guardado Ingreso: ${error.message}`);}
   };
-  document.querySelectorAll("[data-income]").forEach(input=>input.addEventListener("input",()=>{
-    const total=INCOME_INPUTS.reduce((sum,[key,,denom])=>sum+num(document.querySelector(`[data-income="${key}"]`).value)*denom,0);
-    const values={total,gasto:0,ingresos:total,me_queda:0,a_deber:-total};
-    $("ingresoOutputs").innerHTML=INCOME_OUTPUTS.map(([key,label])=>resultRow(label,values[key])).join("");
-  }));
+  document.querySelectorAll("[data-income]").forEach(input=>input.addEventListener("input",renderIncomePreview));
 
   const fillSaving=result=>{
     $("ahorroRow").value=result.row;

@@ -90,24 +90,29 @@ export async function saveContabilidadValues(payload){
 
 export async function saveIngresoValues(payload){
   const v=payload.valores;
-  return postWrite(getIncomeWriteWebhookUrl() || getWriteWebhookUrl(),"guardar_ingreso",{
+  // Ingreso y Contabilidad comparten el mismo webhook de guardado. No usamos
+  // una URL secundaria aunque hubiera quedado almacenada de versiones antiguas:
+  // así ambas pestañas llegan al mismo escenario de Make.
+  return postWrite(getWriteWebhookUrl(),"guardar_ingreso",{
     ...payload,
     hoja:"Ingreso",
     rango:`C${payload.fila}:G${payload.fila}`,
     cuerpo:JSON.stringify({values:[[v.b100,v.b50,v.b20,v.b10,v.b5]]})
-  },"Primero guarda la URL de guardado de Contabilidad en Make.");
+  },"Primero guarda la URL general de guardado de Make.");
 }
 
 export async function saveAhorroValues(payload){
   const v=payload.valores;
   const [year,month,day]=String(payload.fecha).split("-").map(Number);
   const serial=Math.round((Date.UTC(year,month-1,day)-Date.UTC(1899,11,30))/86400000);
-  return postWrite(getSavingWriteWebhookUrl() || getWriteWebhookUrl(),"guardar_ahorro",{
+  // Ahorro también pasa por el webhook general, igual que las otras dos
+  // pestañas. De este modo no depende de direcciones antiguas por dispositivo.
+  return postWrite(getWriteWebhookUrl(),"guardar_ahorro",{
     ...payload,
     hoja:"Ahorro",
     rango:`A${payload.fila}:I${payload.fila}`,
     cuerpo:JSON.stringify({values:[[serial,v.b100,v.b50,v.b20,v.b10,v.b5,null,v.gasto,v.detalle]]})
-  },"Primero guarda la URL de guardado de Contabilidad en Make.");
+  },"Primero guarda la URL general de guardado de Make.");
 }
 
 export async function fetchWorkbook(){

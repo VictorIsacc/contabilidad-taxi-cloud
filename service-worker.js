@@ -1,4 +1,4 @@
-const CACHE="contabilidad-taxi-cloud-20260906-seguro";
+const CACHE="contabilidad-taxi-cloud-20260906-boton-verde";
 const ASSETS=[
   "./","./index.html","./css/estilos.css","./js/app.js","./js/config.js",
   "./js/auth.js","./js/onedrive.js","./js/calculos.js","./js/storage.js","./js/cloud-data.js","./js/legacy-tabs.js",
