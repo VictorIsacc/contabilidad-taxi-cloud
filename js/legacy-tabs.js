@@ -92,7 +92,7 @@ function analysisHtml(){
     <h2 id="periodTitle">Acumulado</h2>
     <div class="pdf-export-zone">
       <div class="pdf-export-card"><div><span class="eyebrow">DETALLADO</span><strong>Días trabajados del período</strong><small>Incluye únicamente las columnas con movimiento.</small></div><button class="btn detail-pdf" id="exportDetailPdf">▤ Exportar PDF detallado</button></div>
-      <div class="pdf-export-card"><div><span class="eyebrow">ACUMULADO</span><strong>Totales y medias del período</strong><small>Oculta automáticamente las líneas sin movimiento.</small><label class="pdf-option"><input id="includeSettlementPdf" type="checkbox"> Incluir referencia de liquidación</label></div><button class="btn accumulated-pdf" id="exportPdf">↓ Exportar PDF acumulado</button></div>
+      <div class="pdf-export-card"><div><span class="eyebrow">ACUMULADO</span><strong>Totales y medias del período</strong><small>Oculta automáticamente las líneas sin movimiento.</small><label class="pdf-option"><input id="includeSettlementPdf" type="checkbox"> Incluir referencia de liquidación</label><label class="pdf-option"><input id="includeMeQuedaPdf" type="checkbox"> Incluir Me queda</label></div><button class="btn accumulated-pdf" id="exportPdf">↓ Exportar PDF acumulado</button></div>
     </div>
     <div class="settlement-wrap">
       <div class="settlement-heading"><span class="eyebrow">LIQUIDACIÓN</span><h3>Datos para la liquidación del período</h3><p>La nómina y las cantidades son editables. Total jefe y A percibir se calculan automáticamente.</p></div>
@@ -307,6 +307,9 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
         const cards=[["Días con fecha",currentPeriod.stats.days,[230,240,250],[41,125,190]],["Días trabajados",currentPeriod.stats.workdays,[231,248,239],[33,139,91]],["Días de descanso",currentPeriod.stats.restdays,[253,242,230],[194,116,24]]];
         cards.forEach(([label,value,bg,ink],index)=>{const x=margin+index*60;doc.setFillColor(...bg);doc.roundedRect(x,37,55,20,3,3,"F");doc.setDrawColor(...ink);doc.roundedRect(x,37,55,20,3,3,"S");doc.setTextColor(75,99,118);doc.setFontSize(8);doc.text(label,x+3,43);doc.setTextColor(...ink);doc.setFontSize(15);doc.text(String(value),x+51,52,{align:"right"});});
         const rows=nonEmptyPeriodRows("total").filter(([label])=>label!=="Me queda").map(([label,total])=>[label,total,currentPeriod.averages[PERIOD_FIELDS.find(([,name])=>name===label)?.[0]]??0]);
+        if($("includeMeQuedaPdf").checked){
+          rows.push(["Me queda",currentPeriod.totals.mes_me_queda??0,currentPeriod.averages.mes_me_queda??0]);
+        }
         let tableY=67,rowH=8;doc.setFillColor(33,86,123);doc.roundedRect(margin,tableY,width,9,2,2,"F");doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text("CONCEPTO",margin+3,tableY+6);doc.text("TOTAL DEL PERÍODO",margin+118,tableY+6,{align:"right"});doc.text("MEDIA / DÍA TRABAJADO",margin+width-3,tableY+6,{align:"right"});tableY+=9;
         rows.forEach(([label,total,average],index)=>{if(tableY>257){doc.addPage();tableY=18;}doc.setFillColor(index%2?248:238,index%2?250:245,index%2?252:248);doc.rect(margin,tableY,width,rowH,"F");doc.setDrawColor(211,224,233);doc.rect(margin,tableY,width,rowH,"S");doc.setTextColor(23,49,69);doc.setFontSize(9);doc.text(label,margin+3,tableY+5.4);doc.text(euro(total),margin+118,tableY+5.4,{align:"right"});doc.text(euro(average),margin+width-3,tableY+5.4,{align:"right"});tableY+=rowH;});
         if($("includeSettlementPdf").checked){

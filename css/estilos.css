@@ -68,5 +68,7 @@ dl{margin:16px 0 0}dl div{display:flex;justify-content:space-between;border-bott
 @media print{.topbar,.hero-card,.tabs,.actions,.notice,.period-controls,.cloud-grid,.toast{display:none!important}.app-shell{max-width:none;padding:0}.tabpage{display:none!important}#tab-analisis{display:block!important}.card{box-shadow:none;background:#fff;color:#172b3b;border-color:#bccbd5}.legacy-row:nth-child(n){background:#fff}.legacy-row span{color:#405666}.cash-grid input,.settlement-panel input{color:#172b3b;background:#fff}}
 
 /* Opción del PDF acumulado: la liquidación solo se incluye al marcarla. */
+.tabs{position:sticky;top:72px;z-index:19;box-shadow:0 8px 18px #0003}
+@media(max-width:520px){.tabs{top:64px}}
 .pdf-option{display:flex;align-items:center;gap:6px;margin-top:5px;color:#c1d0db;font-size:11px;cursor:pointer}
 .pdf-option input{accent-color:#b44b5a}
