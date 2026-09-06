@@ -140,7 +140,13 @@ function addDailyControls(){
   $("todayDate").onclick=()=>{$("workDate").value=isoToday();renderWorkDate();toast("Fecha de hoy seleccionada");};
   $("previousDate").onclick=()=>changeWorkDate(-1);
   $("nextDate").onclick=()=>changeWorkDate(1);
-  $("loadCurrentDay").onclick=()=>$("loadDay").click();
+  $("loadCurrentDay").onclick=()=>{
+    const active=qsa(".tab").find(tab=>tab.classList.contains("active"))?.dataset.tab;
+    if(active==="ingreso") return legacyTabs.loadIncome();
+    if(active==="ahorro") return legacyTabs.loadSavingForDate();
+    if(active==="analisis"){toast("En Análisis usa «Mes de la fecha», «Ver mes» o «Filtrar rango».");return;}
+    return $("loadDay").click();
+  };
   $("loadBundle").onclick=async()=>{ $("loadDay").click(); await legacyTabs.loadIncome(); };
   $("nextPending").onclick=async()=>{
     if(!getWebhookUrl()){toast("Primero guarda la URL privada del webhook de Make.");return;}

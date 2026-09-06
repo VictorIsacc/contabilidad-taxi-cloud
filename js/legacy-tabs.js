@@ -213,6 +213,13 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
     if(!getWorkbook() && !(await ensureWorkbook(false))) return;
     try{const result=loadAhorroRow(row??$("ahorroRow").value);fillSaving(result);toast(`Ahorro cargado desde la fila ${result.row}`);}catch(error){toast(error.message);}
   };
+  const loadSavingForDate=async()=>{
+    if(!getWorkbook() && !(await ensureWorkbook(false))) return;
+    const result=findAhorroDate(getDate());
+    if(!result){toast("No se encontró esa fecha en la hoja Ahorro");return;}
+    fillSaving(result);
+    toast(`Ahorro cargado desde la fila ${result.row}`);
+  };
   $("loadAhorro").onclick=()=>loadSaving();
   $("findAhorro").onclick=async()=>{
     if(!getWorkbook() && !(await ensureWorkbook(false))) return;
@@ -356,5 +363,5 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
   $("pdfNomina").oninput=updateSettlement;document.querySelectorAll(".cash-qty").forEach(i=>i.oninput=updateSettlement);
   const now=getDate().split("-");$("monthView").value=`${now[1]}/${now[0]}`;$("rangeStart").value=getDate();$("rangeEnd").value=getDate();
 
-  return {loadIncome,loadSaving,loadAnalysis:()=>$("viewMonth").click()};
+  return {loadIncome,loadSaving,loadSavingForDate,loadAnalysis:()=>$("monthOfDate").click()};
 }
