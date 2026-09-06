@@ -5,8 +5,8 @@ import {
   workbookSummary, findContabilidadDate, nextPendingContabilidad,
   getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
   saveIngresoValues, saveAhorroValues
-} from "./cloud-data.js?v=20260906-ingreso-fix";
-import { initLegacyTabs } from "./legacy-tabs.js?v=20260906-ingreso-fix";
+} from "./cloud-data.js?v=20260906-verificado";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260906-verificado";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
@@ -200,7 +200,7 @@ $("saveDay").addEventListener("click",async()=>{
         gasolina_lavado:num(values.gasolina_lavado)
       }
     });
-    toast(`Guardado en OneDrive · fila ${row.row}`);
+    toast(`Excel confirmó el guardado de Contabilidad · fila ${row.row}`);
   }catch(e){
     toast(`No se ha guardado en OneDrive: ${e.message}`);
   }

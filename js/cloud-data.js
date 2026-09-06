@@ -75,7 +75,17 @@ async function postWrite(url, action, payload, missingMessage){
   const responseBody=(await response.text()).trim();
   if(!response.ok) throw new Error(responseBody || `Make respondió con error ${response.status}.`);
   if(/^error\b/i.test(responseBody)) throw new Error(responseBody);
-  return responseBody;
+  // El escenario responde {"ok":true} únicamente después de que Microsoft
+  // Graph haya aceptado el PATCH. Esta validación es común para Contabilidad,
+  // Ingreso y Ahorro, que comparten postWrite.
+  let confirmation;
+  try{confirmation=JSON.parse(responseBody);}catch(_error){
+    throw new Error("Make no confirmó que Excel aceptara el guardado.");
+  }
+  if(confirmation?.ok!==true){
+    throw new Error("Make no confirmó que Excel aceptara el guardado.");
+  }
+  return confirmation;
 }
 
 export async function saveContabilidadValues(payload){

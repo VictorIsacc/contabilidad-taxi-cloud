@@ -2,7 +2,7 @@ import { euro, num } from "./calculos.js?v=20260903a";
 import {
   getWorkbook, findIngresoDate, loadAhorroRow, findAhorroDate,
   nextFreeAhorroRow, contabilidadPeriod
-} from "./cloud-data.js?v=20260906-ingreso-fix";
+} from "./cloud-data.js?v=20260906-verificado";
 
 const $=id=>document.getElementById(id);
 const INCOME_INPUTS=[["b100","100 €",100],["b50","50 €",50],["b20","20 €",20],["b10","10 €",10],["b5","5 €",5]];
@@ -190,7 +190,7 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
       // sin afirmar que las fórmulas del libro se hayan recalculado localmente.
       loadedIncome={...result,inputs:{...values}};
       renderIncomePreview();
-      toast(`Ingreso enviado a Make · fila ${result.row}`);
+      toast(`Excel confirmó el guardado de Ingreso · fila ${result.row}`);
     }
     catch(error){toast(`No se ha guardado Ingreso: ${error.message}`);}
   };
@@ -249,7 +249,7 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
     const iso=displayToIso(values.date);
     if(!iso){toast("Fecha no válida. Usa dd/mm/aaaa.");return;}
     ["b100","b50","b20","b10","b5"].forEach(key=>values[key]=num(values[key]));
-    try{await saveAhorro({fila:row,fecha:iso,valores});toast(`Ahorro guardado en OneDrive · fila ${row}`);}
+    try{await saveAhorro({fila:row,fecha:iso,valores});toast(`Excel confirmó el guardado de Ahorro · fila ${row}`);}
     catch(error){toast(`No se ha guardado Ahorro: ${error.message}`);}
   };
   $("loadAhorroDraft").onclick=()=>{
