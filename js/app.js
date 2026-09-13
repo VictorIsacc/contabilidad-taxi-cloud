@@ -5,8 +5,8 @@ import {
   workbookSummary, findContabilidadDate, nextPendingContabilidad,
   getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
   saveIngresoValues, saveAhorroValues
-} from "./cloud-data.js?v=20260906-verificado";
-import { initLegacyTabs } from "./legacy-tabs.js?v=20260906-verificado";
+} from "./cloud-data.js?v=20260914-pdf";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260914-pdf";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];

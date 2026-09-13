@@ -306,14 +306,36 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
     const script=document.createElement("script");script.id="jspdf-cdn";script.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
     script.onload=()=>window.jspdf?.jsPDF?resolve(window.jspdf.jsPDF):reject(new Error("No se pudo cargar el generador PDF"));script.onerror=()=>reject(new Error("No se pudo cargar el generador PDF"));document.head.appendChild(script);
   });
+  let pdfLogoData=null;
+  const loadPdfLogo=async()=>{
+    if(pdfLogoData) return pdfLogoData;
+    const response=await fetch("./icons/icon-192.png");
+    if(!response.ok) throw new Error("No se pudo cargar el icono de la aplicación para el PDF");
+    const blob=await response.blob();
+    pdfLogoData=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+    return pdfLogoData;
+  };
+  const drawPdfHeader=(doc,{pageWidth,margin,title,subtitle,logo})=>{
+    doc.setFillColor(21,57,82);doc.roundedRect(5,5,pageWidth-10,27,5,5,"F");
+    doc.addImage(logo,"PNG",margin,8,18,18);
+    doc.setTextColor(255,255,255);doc.setFontSize(17);doc.text(title,margin+24,16);doc.setFontSize(9.5);doc.text(subtitle,margin+24,23);
+    return 41;
+  };
+  const ACCUMULATED_ROW_COLORS={
+    "Suma total":{fill:[228,238,252],stripe:[41,125,190]},
+    "Cierre PideTaxi":{fill:[255,246,222],stripe:[235,170,26]},
+    "Uber":{fill:[242,235,255],stripe:[130,85,213]},
+    "Cobro tarjeta":{fill:[225,248,250],stripe:[34,161,173]},
+    "Total jefe":{fill:[255,239,226],stripe:[235,119,40]},
+    "Me queda":{fill:[228,249,240],stripe:[35,181,111]}
+  };
   const exportPdf=async detailed=>{
     if(!currentPeriod){toast("Primero carga un mes o un rango para exportar");return;}
     try{
-      const JsPDF=await loadPdf(),doc=new JsPDF({unit:"mm",format:"a4",orientation:detailed?"landscape":"portrait"});
+      const JsPDF=await loadPdf(),logo=await loadPdfLogo(),doc=new JsPDF({unit:"mm",format:"a4",orientation:detailed?"landscape":"portrait"});
       const margin=16,pageWidth=detailed?297:210,width=detailed?265:178;let y=18;
       const title=detailed?"Contabilidad Taxi · Informe detallado":"Contabilidad Taxi · Informe acumulado";
-      doc.setFillColor(13,35,53);doc.rect(0,0,pageWidth,33,"F");doc.setTextColor(255,255,255);doc.setFontSize(17);doc.text(title,margin,15);doc.setFontSize(10);doc.text(currentPeriod.label,margin,23);doc.text(`Generado: ${pdfDate()}`,margin,28);
-      doc.setTextColor(20,42,58);doc.setFontSize(12);y=44;
+      y=drawPdfHeader(doc,{pageWidth,margin,title,subtitle:currentPeriod.label,logo});`r`n      doc.setTextColor(20,42,58);doc.setFontSize(12);
       const addLine=(label,value)=>{if(y>278){doc.addPage();y=18;}doc.setFontSize(10);doc.text(label,margin,y);doc.text(euro(value),margin+width,y,{align:"right"});doc.setDrawColor(215,225,232);doc.line(margin,y+2,margin+width,y+2);y+=7;};
       if(detailed){
         const fields=(currentPeriod.detailFields||[]).filter(field=>currentPeriod.detailRows.some(row=>Math.abs(num(row.values[field.key]))>.0001));
@@ -321,7 +343,7 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
         const allColumns=[{key:"date",label:"Fecha"},{key:"day",label:"Día"},...fields];
         const columnWidth=width/allColumns.length,headerHeight=10,rowHeight=6;
         const drawDetailHeader=at=>{doc.setFillColor(33,86,123);doc.rect(margin,at,width,headerHeight,"F");doc.setTextColor(255,255,255);doc.setFontSize(5.7);allColumns.forEach((field,index)=>{const x=margin+index*columnWidth;const lines=doc.splitTextToSize(field.label,columnWidth-1);doc.text(lines,x+columnWidth/2,at+3.5,{align:"center"});});};
-        y=40;drawDetailHeader(y);y+=headerHeight;
+        drawDetailHeader(y);y+=headerHeight;
         currentPeriod.detailRows.forEach((row,index)=>{
           if(y>198){doc.addPage();y=16;drawDetailHeader(y);y+=headerHeight;}
           doc.setFillColor(index%2?249:238,index%2?251:246,index%2?253:249);doc.rect(margin,y,width,rowHeight,"F");doc.setDrawColor(215,225,232);doc.rect(margin,y,width,rowHeight,"S");doc.setTextColor(22,48,69);doc.setFontSize(5.9);
@@ -338,15 +360,15 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
       }else{
         /* Maquetación equivalente al informe acumulado de la aplicación de escritorio. */
         const rangeText=currentPeriod.label.replace("Acumulado del mes ","Mes ").replace("Acumulado del rango ","Rango ");
-        doc.setFillColor(21,57,82);doc.rect(0,0,210,30,"F");doc.setTextColor(255,255,255);doc.setFontSize(18);doc.text("Contabilidad Taxi - Acumulado",margin,14);doc.setFontSize(10);doc.text(rangeText,margin,22);
+        y=drawPdfHeader(doc,{pageWidth:210,margin,title:"Contabilidad Taxi - Acumulado",subtitle:rangeText,logo});
         const cards=[["Días con fecha",currentPeriod.stats.days,[230,240,250],[41,125,190]],["Días trabajados",currentPeriod.stats.workdays,[231,248,239],[33,139,91]],["Días de descanso",currentPeriod.stats.restdays,[253,242,230],[194,116,24]]];
-        cards.forEach(([label,value,bg,ink],index)=>{const x=margin+index*60;doc.setFillColor(...bg);doc.roundedRect(x,37,55,20,3,3,"F");doc.setDrawColor(...ink);doc.roundedRect(x,37,55,20,3,3,"S");doc.setTextColor(75,99,118);doc.setFontSize(8);doc.text(label,x+3,43);doc.setTextColor(...ink);doc.setFontSize(15);doc.text(String(value),x+51,52,{align:"right"});});
+        cards.forEach(([label,value,bg,ink],index)=>{const x=margin+index*60;doc.setFillColor(...bg);doc.roundedRect(x,41,55,20,3,3,"F");doc.setDrawColor(...ink);doc.roundedRect(x,41,55,20,3,3,"S");doc.setTextColor(75,99,118);doc.setFontSize(8);doc.text(label,x+3,47);doc.setTextColor(...ink);doc.setFontSize(15);doc.text(String(value),x+51,56,{align:"right"});});
         const rows=nonEmptyPeriodRows("total").filter(([label])=>label!=="Me queda").map(([label,total])=>[label,total,currentPeriod.averages[PERIOD_FIELDS.find(([,name])=>name===label)?.[0]]??0]);
         if($("includeMeQuedaPdf").checked){
           rows.push(["Me queda",currentPeriod.totals.mes_me_queda??0,currentPeriod.averages.mes_me_queda??0]);
         }
-        let tableY=67,rowH=8;doc.setFillColor(33,86,123);doc.roundedRect(margin,tableY,width,9,2,2,"F");doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text("CONCEPTO",margin+3,tableY+6);doc.text("TOTAL DEL PERÍODO",margin+118,tableY+6,{align:"right"});doc.text("MEDIA / DÍA TRABAJADO",margin+width-3,tableY+6,{align:"right"});tableY+=9;
-        rows.forEach(([label,total,average],index)=>{if(tableY>257){doc.addPage();tableY=18;}doc.setFillColor(index%2?248:238,index%2?250:245,index%2?252:248);doc.rect(margin,tableY,width,rowH,"F");doc.setDrawColor(211,224,233);doc.rect(margin,tableY,width,rowH,"S");doc.setTextColor(23,49,69);doc.setFontSize(9);doc.text(label,margin+3,tableY+5.4);doc.text(euro(total),margin+118,tableY+5.4,{align:"right"});doc.text(euro(average),margin+width-3,tableY+5.4,{align:"right"});tableY+=rowH;});
+        let tableY=71,rowH=8;doc.setFillColor(33,86,123);doc.roundedRect(margin,tableY,width,9,2,2,"F");doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text("CONCEPTO",margin+3,tableY+6);doc.text("TOTAL DEL PERÍODO",margin+118,tableY+6,{align:"right"});doc.text("MEDIA / DÍA TRABAJADO",margin+width-3,tableY+6,{align:"right"});tableY+=9;
+        rows.forEach(([label,total,average],index)=>{if(tableY>257){doc.addPage();tableY=18;}const color=ACCUMULATED_ROW_COLORS[label];const fallback=index%2?[248,250,252]:[238,245,248];doc.setFillColor(...(color?.fill||fallback));doc.rect(margin,tableY,width,rowH,"F");if(color){doc.setFillColor(...color.stripe);doc.rect(margin,tableY,1.4,rowH,"F");}doc.setDrawColor(211,224,233);doc.rect(margin,tableY,width,rowH,"S");const negative=total<0;doc.setTextColor(23,49,69);doc.setFontSize(9);if(color) doc.setFont(undefined,"bold");doc.text(label,margin+3,tableY+5.4);doc.setTextColor(negative?202:23,negative?42:49,negative?58:69);doc.text(euro(total),margin+118,tableY+5.4,{align:"right"});doc.text(euro(average),margin+width-3,tableY+5.4,{align:"right"});if(color) doc.setFont(undefined,"normal");tableY+=rowH;});
         if($("includeSettlementPdf").checked){
           const payroll=num($("pdfNomina").value),receive=payroll+chiefTotal;
           if(tableY>244){doc.addPage();tableY=18;}tableY+=8;doc.setFillColor(21,57,82);doc.roundedRect(margin,tableY,width,25,3,3,"F");doc.setTextColor(255,255,255);doc.setFontSize(10);doc.text("REFERENCIA DE LIQUIDACIÓN",margin+4,tableY+7);
