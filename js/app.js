@@ -5,8 +5,8 @@ import {
   workbookSummary, findContabilidadDate, nextPendingContabilidad,
   getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
   saveIngresoValues, saveAhorroValues
-} from "./cloud-data.js?v=20260914b-pdf";
-import { initLegacyTabs } from "./legacy-tabs.js?v=20260914b-pdf";
+} from "./cloud-data.js?v=20260914c-tabs";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260914c-tabs";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
@@ -118,13 +118,24 @@ async function loadCloudWorkbook(showToast=true){
 $("workDate").value=isoToday();
 renderWorkDate();
 $("workDate").addEventListener("change",()=>{renderWorkDate();syncSeguroForWorkDate();});
-const legacyTabs=initLegacyTabs({
-  ensureWorkbook:loadCloudWorkbook,
-  toast,
-  getDate:()=>$("workDate").value,
-  saveIngreso:saveIngresoValues,
-  saveAhorro:saveAhorroValues
-});
+let legacyTabs={
+  loadIncome:async()=>{},
+  loadSaving:async()=>{},
+  loadSavingForDate:async()=>{},
+  loadAnalysis:async()=>{}
+};
+try{
+  legacyTabs=initLegacyTabs({
+    ensureWorkbook:loadCloudWorkbook,
+    toast,
+    getDate:()=>$("workDate").value,
+    saveIngreso:saveIngresoValues,
+    saveAhorro:saveAhorroValues
+  });
+}catch(error){
+  console.error("No se pudo iniciar una sección secundaria",error);
+  toast("Una sección no se pudo iniciar; Contabilidad y Nube siguen disponibles.");
+}
 
 function changeWorkDate(days){
   const input=$("workDate"),date=new Date(`${input.value}T12:00:00`);
