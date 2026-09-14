@@ -352,7 +352,7 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
         });
         if(y>198){doc.addPage();y=16;drawDetailHeader(y);y+=headerHeight;}
         doc.setFillColor(224,238,247);doc.rect(margin,y,width,rowHeight,"F");doc.setDrawColor(97,139,166);doc.rect(margin,y,width,rowHeight,"S");doc.setTextColor(20,58,82);doc.setFontSize(6.2);doc.text("TOTAL",margin+columnWidth,y+4,{align:"center"});
-        fields.forEach((field,index)=>{const total=currentPeriod.detailRows.reduce((sum,row)=>sum+num(row.values[field.key]),0);doc.text(euro(total),margin+(index+2)*columnWidth+columnWidth/2,y+4,{align:"center"});});y+=rowHeight;
+        fields.forEach((field,index)=>{const total=currentPeriod.detailRows.reduce((sum,row)=>sum+num(row.values[field.key]),0);doc.setTextColor(total<0?200:20,total<0?45:58,total<0?55:82);doc.text(euro(total),margin+(index+2)*columnWidth+columnWidth/2,y+4,{align:"center"});});y+=rowHeight;
         if(excluded.length){doc.setTextColor(84,105,121);doc.setFontSize(7);doc.text(`Sin movimientos en el período · excluidas: ${excluded.join(", ")}`,margin,y+5);y+=10;}
         if(y>180){doc.addPage();y=18;}
         const payroll=num($("pdfNomina").value),cash=[...document.querySelectorAll(".cash-qty")].reduce((s,i)=>s+num(i.value)*num(i.dataset.denom),0),receive=payroll+chiefTotal;
