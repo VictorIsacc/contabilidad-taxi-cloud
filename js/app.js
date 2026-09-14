@@ -6,7 +6,7 @@ import {
   getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
   saveIngresoValues, saveAhorroValues
 } from "./cloud-data.js?v=20260914c-tabs";
-import { initLegacyTabs } from "./legacy-tabs.js?v=20260914c-tabs";
+import { initLegacyTabs } from "./legacy-tabs.js?v=20260914d-tabs";
 
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
@@ -270,7 +270,7 @@ $("testCloud")?.addEventListener("click",()=>loadCloudWorkbook(true));
 setCloudStatus();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js")
+  navigator.serviceWorker.register("./service-worker.js?v=20260914d-tabs")
     .catch(()=>{});
 }
 
