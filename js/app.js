@@ -6,8 +6,7 @@ import {
   getWriteWebhookUrl, saveWriteWebhookUrl, clearWriteWebhookUrl, saveContabilidadValues,
   saveIngresoValues, saveAhorroValues
 } from "./cloud-data.js?v=20260914c-tabs";
-import { initLegacyTabs } from "./legacy-tabs-20260914d.js?v=20260914e-red";
-
+import { initLegacyTabs } from "./legacy-tabs-20260914d.js?v=20260914f-total-red";
 const $=id=>document.getElementById(id);
 const qsa=s=>[...document.querySelectorAll(s)];
 let currentContaSeguro=0;
