@@ -348,7 +348,7 @@ export function initLegacyTabs({ensureWorkbook,toast,getDate,saveIngreso,saveAho
         currentPeriod.detailRows.forEach((row,index)=>{
           if(y>198){doc.addPage();y=16;drawDetailHeader(y);y+=headerHeight;}
           doc.setFillColor(index%2?249:238,index%2?251:246,index%2?253:249);doc.rect(margin,y,width,rowHeight,"F");doc.setDrawColor(215,225,232);doc.rect(margin,y,width,rowHeight,"S");doc.setTextColor(22,48,69);doc.setFontSize(5.9);
-          allColumns.forEach((field,col)=>{const value=field.key==="date"?isoToDisplay(row.date):field.key==="day"?row.day:euro(row.values[field.key]);doc.text(String(value),margin+col*columnWidth+columnWidth/2,y+4,{align:"center"});});y+=rowHeight;
+          allColumns.forEach((field,col)=>{const raw=field.key==="date"?null:field.key==="day"?null:num(row.values[field.key]);const value=field.key==="date"?isoToDisplay(row.date):field.key==="day"?row.day:euro(raw);doc.setTextColor(raw!==null&&raw<0?200:22,raw!==null&&raw<0?45:48,raw!==null&&raw<0?55:69);doc.text(String(value),margin+col*columnWidth+columnWidth/2,y+4,{align:"center"});});y+=rowHeight;
         });
         if(y>198){doc.addPage();y=16;drawDetailHeader(y);y+=headerHeight;}
         doc.setFillColor(224,238,247);doc.rect(margin,y,width,rowHeight,"F");doc.setDrawColor(97,139,166);doc.rect(margin,y,width,rowHeight,"S");doc.setTextColor(20,58,82);doc.setFontSize(6.2);doc.text("TOTAL",margin+columnWidth,y+4,{align:"center"});
